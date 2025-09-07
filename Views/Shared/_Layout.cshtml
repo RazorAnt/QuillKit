@@ -1,0 +1,117 @@
+﻿@using QuillKit.Services
+@inject SiteConfigService SiteConfigService
+@{
+    var config = SiteConfigService.Config;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - @config.Title</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css">
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" />
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="~/css/styles.css" asp-append-version="true" />
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light navbar-cream">
+        <div class="container">
+            <a class="navbar-brand fw-bold" asp-controller="Site" asp-action="Index">
+                <img src="~/images/quill-icon.png" alt="QuillKit" width="30" height="30" style="margin-bottom: 5px;">
+                @config.Title
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    @foreach (var navItem in config.Navigation)
+                    {
+                        <li class="nav-item">
+                            @if (navItem.Url == "/" || navItem.Title.ToLower() == "home")
+                            {
+                                <a class="nav-link" asp-controller="Site" asp-action="Index">@navItem.Title</a>
+                            }
+                            else if (navItem.Url.StartsWith("/"))
+                            {
+                                <a class="nav-link" asp-controller="Site" asp-action="Page" asp-route-slug="@navItem.Url.TrimStart('/')">@navItem.Title</a>
+                            }
+                            else
+                            {
+                                <a class="nav-link" href="@navItem.Url">@navItem.Title</a>
+                            }
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container my-2">
+        @RenderBody()
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer-main">
+        <!-- Cream section -->
+        <div class="footer-cream py-3">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-11">
+                        <p class="mb-0 small text-muted">
+                            
+                        </p>
+                    </div>
+                    <div class="col-1 text-end">
+                        @if (!string.IsNullOrEmpty(config.Social.Feed))
+                        {
+                            <a href="@config.Social.Feed" class="footer-social-link" target="_blank" title="RSS Feed">
+                                <i class="bi bi-rss-fill"></i>
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Brown section -->
+        <div class="footer-brown py-2">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <p class="mb-0 small text-light opacity-75">
+                            &copy; @DateTime.Now.Year @config.Title. All rights reserved.
+                        </p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <p class="mb-0 small text-light opacity-75">
+                            Published with <a href="https://github.com/RazorAnt/QuillKit" class="text-warning text-decoration-none">QuillKit</a> 
+                            / <a href="/admin" class="text-warning text-decoration-none">Sign in</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/lightbox.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

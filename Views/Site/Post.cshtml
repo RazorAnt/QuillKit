@@ -1,0 +1,95 @@
+@model QuillKit.Models.Post
+
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="row">
+    <!-- Main Content -->
+    <div class="col-lg-8">
+        <article class="post-single">
+            <!-- Post Header -->
+            <header class="post-header mb-4">
+                <h1 class="post-title display-4 mb-3">@Model.Title</h1>
+                
+                <div class="post-meta mb-4">
+                    <div class="d-flex flex-wrap align-items-center text-muted">
+                        <span class="me-3">
+                            <i class="bi bi-calendar3"></i>
+                            @Model.PubDate.ToString("MMMM dd, yyyy")
+                        </span>
+                        @if (Model.Categories.Any())
+                        {
+                            <span>
+                                <i class="bi bi-folder"></i>
+                                @string.Join(", ", Model.Categories)
+                            </span>
+                        }
+                    </div>
+                </div>
+                
+                @if (!string.IsNullOrEmpty(Model.Image))
+                {
+                    <div class="post-featured-image mb-4">
+                        <img src="@Model.Image" alt="@Model.Title" class="img-fluid rounded shadow-sm" />
+                    </div>
+                }
+            </header>
+            
+            <!-- Post Content -->
+            <div class="post-content">
+                @Html.Raw(Model.GetHtmlContent())
+            </div>
+            
+            <!-- Post Footer -->
+            <footer class="post-footer mt-5 pt-4 border-top">
+                @if (Model.Tags.Any())
+                {
+                    <div class="post-tags mb-4">
+                        <h6 class="mb-2">Tags</h6>
+                        @foreach (var tag in Model.Tags)
+                        {
+                            <span class="badge bg-light me-1 mb-1">@tag</span>
+                        }
+                    </div>
+                }
+                
+                <!-- Share Buttons -->
+                <div class="post-share mb-4">
+                    <p class="mb-2">
+                        Share on 
+                        <a href="https://bsky.app/intent/compose?text=@Uri.EscapeDataString(Model.Title + " " + Context.Request.Scheme + "://" + Context.Request.Host + Context.Request.Path)" 
+                           target="_blank" class="text-decoration-none bluesky-share-link">
+                            <i class="bi bi-bluesky"></i> Bluesky
+                        </a>
+                        or click the 
+                        <button type="button" class="btn-link border-0 bg-transparent p-0 text-decoration-none permalink-link" 
+                                onclick="copyPermalink()" id="permalinkBtn">
+                            <i class="bi bi-link-45deg"></i> Permalink
+                        </button>
+                        and paste anywhere.
+                    </p>
+                </div>
+            </footer>
+        </article>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        @await Html.PartialAsync("_Sidebar")
+    </div>
+</div>
+
+<script>
+function copyPermalink() {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(function() {
+        const btn = document.getElementById('permalinkBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+        }, 2000);
+    });
+}
+</script>

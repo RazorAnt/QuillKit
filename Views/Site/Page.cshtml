@@ -1,0 +1,33 @@
+@model QuillKit.Models.Post
+
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="row">
+    <!-- Main Content -->
+    <div class="col-lg-8">
+        <article class="page">
+            <header class="page-header mb-4">
+                <h1 class="page-title display-4 mb-3">@Model.Title</h1>
+                <div class="page-meta mb-4">
+                    <div class="d-flex flex-wrap align-items-center text-muted">
+                        <span>
+                            <i class="bi bi-calendar3"></i>
+                            @Model.PubDate.ToString("MMMM dd, yyyy")
+                        </span>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="page-content">
+                @Html.Raw(Model.GetHtmlContent())
+            </div>
+        </article>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        @await Html.PartialAsync("_Sidebar")
+    </div>
+</div>

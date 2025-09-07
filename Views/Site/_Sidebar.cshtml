@@ -1,0 +1,132 @@
+@using QuillKit.Services
+@inject SiteConfigService SiteConfigService
+@inject IPostService PostService
+@{
+    var config = SiteConfigService.Config;
+}
+
+<!-- Sidebar -->
+<div class="sticky-sidebar">
+    
+    <!-- Author Box -->
+    @if (config.Sidebar.ShowAuthor)
+    {
+        <div class="card sidebar-card">
+            <div class="card-body author-box">
+                <img src="~/images/user.png" class="rounded-circle" alt="@config.Author.Name" width="120" height="120">
+                <h5>@config.Author.Name</h5>
+                <p class="card-text">@config.Author.Bio</p>
+                
+                <!-- Social Media Icons -->
+                <div class="social-media d-flex justify-content-center gap-2 mt-3">
+                    @if (!string.IsNullOrEmpty(config.Social.Bluesky))
+                    {
+                        <a href="https://bsky.app/profile/@config.Social.Bluesky" class="social-icon bluesky" target="_blank" title="Bluesky">
+                            <i class="bi bi-bluesky"></i>
+                        </a>
+                    }
+                    @if (!string.IsNullOrEmpty(config.Social.Email))
+                    {
+                        <a id="emailLink" class="social-icon mail" 
+                           data-email="@SiteConfigService.GetObfuscatedEmail()"
+                           onmouseover="setEmail(true);" 
+                           onmouseleave="setEmail(false);" 
+                           href="#" 
+                           title="Email">
+                            <i class="bi bi-envelope-fill"></i>
+                        </a>
+                    }
+                    @if (!string.IsNullOrEmpty(config.Social.GitHub))
+                    {
+                        <a href="https://github.com/@config.Social.GitHub" class="social-icon github" target="_blank" title="GitHub">
+                            <i class="bi bi-github"></i>
+                        </a>
+                    }
+                    @if (!string.IsNullOrEmpty(config.Social.Feed))
+                    {
+                        <a href="@config.Social.Feed" class="social-icon rss" target="_blank" title="RSS Feed">
+                            <i class="bi bi-rss-fill"></i>
+                        </a>
+                    }
+                    @if (!string.IsNullOrEmpty(config.Social.YouTube))
+                    {
+                        <a href="https://youtube.com/@config.Social.YouTube" class="social-icon youtube" target="_blank" title="YouTube">
+                            <i class="bi bi-youtube"></i>
+                        </a>
+                    }
+                    @if (!string.IsNullOrEmpty(config.Social.Twitter))
+                    {
+                        <a href="https://twitter.com/@config.Social.Twitter" class="social-icon twitter" target="_blank" title="Twitter">
+                            <i class="bi bi-twitter-x"></i>
+                        </a>
+                    }
+                    @if (!string.IsNullOrEmpty(config.Social.LinkedIn))
+                    {
+                        <a href="https://linkedin.com/in/@config.Social.LinkedIn" class="social-icon linkedin" target="_blank" title="LinkedIn">
+                            <i class="bi bi-linkedin"></i>
+                        </a>
+                    }
+                    @if (!string.IsNullOrEmpty(config.Social.Instagram))
+                    {
+                        <a href="https://instagram.com/@config.Social.Instagram" class="social-icon instagram" target="_blank" title="Instagram">
+                            <i class="bi bi-instagram"></i>
+                        </a>
+                    }
+                    @if (!string.IsNullOrEmpty(config.Social.Facebook))
+                    {
+                        <a href="https://facebook.com/@config.Social.Facebook" class="social-icon facebook" target="_blank" title="Facebook">
+                            <i class="bi bi-facebook"></i>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Pinned Posts -->
+    @if (config.Sidebar.PinnedPosts?.Any() == true)
+    {
+        <div class="sidebar-section">
+            <h5 class="sidebar-header">Pinned Posts</h5>
+            <div class="sidebar-content">
+                @foreach (var slug in config.Sidebar.PinnedPosts)
+                {
+                    var post = await PostService.GetPostBySlugAsync(slug);
+                    if (post != null)
+                    {
+                        <div class="mb-2">
+                            <a href="@Url.Action("Post", "Site", new { slug = post.Slug })" class="text-decoration-none text-dark">@post.Title</a>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Categories -->
+    @{
+        var allPosts = await PostService.GetPublishedPostsAsync(1, 1000); // Get all published posts
+        var postCategories = allPosts
+            .Where(p => p.Type == QuillKit.Models.PostType.Post) // Only posts, not pages or micros
+            .SelectMany(p => p.Categories)
+            .GroupBy(c => c, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new { Category = g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .ToList();
+    }
+    @if (postCategories.Any())
+    {
+        <div class="sidebar-section">
+            <h5 class="sidebar-header">Categories</h5>
+            <div class="sidebar-content">
+                @foreach (var categoryGroup in postCategories)
+                {
+                    <div class="mb-2">
+                        <a href="@Url.Action("Category", "Site", new { category = categoryGroup.Category })" class="text-decoration-none text-dark">@categoryGroup.Category (@categoryGroup.Count)</a>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+</div>

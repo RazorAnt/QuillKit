@@ -1,0 +1,52 @@
+# QuillKit Blog Configuration
+
+# Site Settings
+title: "QuillKit"
+subtitle: "Your thoughts, published beautifully"
+description: "A modern, fast, markdown-based site engine"
+baseurl: "https://yoursite.com"
+
+# Author Information (Used in author box, default theme)
+author:
+  name: "Author"
+  bio: "Author is an amazing human."
+  
+# Social Links (Used in author box, default theme - Empty items are ignored)
+social:
+  email: "author@yoursite.com"  # Eemail address will be obfuscated automatically
+  feed: "/feed"  # RSS/Atom feed if you want it shown
+  github: "myaccount"
+  bluesky: "myaccount"
+  twitter: "myaccount" 
+  linkedin: ""
+  facebook: ""
+  instagram: ""
+  youtube: ""
+
+# Theme Settings (Items here are dynamic and can be accessed in your theme)
+theme:
+#   primary_color: "#EC9C24"
+#   secondary_color: "#333333"
+#   accent_color: "#666666"
+#   background_color: "#ffffff"
+#   text_color: "#333333"
+#   link_color: "#EC9C24"
+
+# Navigation (Add any of your pages that you want here)
+navigation:
+  - title: "Home"
+    url: "/"
+  - title: "About" 
+    url: "/about"
+
+# Sidebar Widgets
+sidebar:
+  show_author: true
+  pinned_posts:
+    - "a-sample-markdown-post"
+
+# Content Settings
+markdown:
+  enable_lightbox: true
+  enable_video_embeds: true
+

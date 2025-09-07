@@ -1,0 +1,147 @@
+using System.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
+using QuillKit.Models;
+using QuillKit.Services;
+
+namespace QuillKit.Controllers;
+
+public class SiteController : Controller
+{
+    private readonly IPostService _postService;
+    private readonly SiteConfigService _siteConfigService;
+    private readonly ILogger<SiteController> _logger;
+
+    public SiteController(IPostService postService, SiteConfigService siteConfigService, ILogger<SiteController> logger)
+    {
+        _postService = postService;
+        _siteConfigService = siteConfigService;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// 🏠 Main page showing recent posts
+    /// </summary>
+    public async Task<IActionResult> Index(int page = 1)
+    {
+        // Simple list of all published posts for now
+        var posts = await _postService.GetPublishedPostsAsync(page, 10);
+        return View(posts);
+    }
+
+    /// <summary>
+    /// 📖 Display a single post by slug
+    /// </summary>
+    [Route("post/{slug}")]
+    public async Task<IActionResult> Post(string slug)
+    {
+        if (string.IsNullOrEmpty(slug))
+        {
+            return NotFound();
+        }
+
+        var post = await _postService.GetPostBySlugAsync(slug);
+        
+        if (post == null)
+        {
+            _logger.LogWarning("Post not found: {Slug}", slug);
+            return NotFound();
+        }
+
+        if (post.Status != PostStatus.Published || post.Type != PostType.Post)
+        {
+            _logger.LogWarning("Attempted to access unpublished post: {Slug}", slug);
+            return NotFound();
+        }
+
+        return View(post);
+    }
+
+    /// <summary>
+    /// 📄 Display a single page by slug
+    /// </summary>
+    [Route("page/{slug}")]
+    public async Task<IActionResult> Page(string slug)
+    {
+        if (string.IsNullOrEmpty(slug))
+        {
+            return NotFound();
+        }
+
+        var page = await _postService.GetPostBySlugAsync(slug);
+        
+        if (page == null)
+        {
+            _logger.LogWarning("Page not found: {Slug}", slug);
+            return NotFound();
+        }
+
+        if (page.Status != PostStatus.Published || page.Type != PostType.Page)
+        {
+            _logger.LogWarning("Attempted to access unpublished page: {Slug}", slug);
+            return NotFound();
+        }
+
+        return View(page);
+    }
+
+    /// <summary>
+    /// 🔍 Search results page
+    /// </summary>
+    [Route("search")]
+    public async Task<IActionResult> Search(string query, int page = 1)
+    {
+        // TODO: Implement search functionality
+        if (string.IsNullOrEmpty(query))
+        {
+            return View(new List<Post>());
+        }
+
+        // Placeholder for search implementation
+        var allPosts = await _postService.GetAllPostsAsync();
+        var searchResults = allPosts
+            .Where(p => p.Status == PostStatus.Published)
+            .Where(p => p.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                       p.Content.Contains(query, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        ViewData["Query"] = query;
+        return View(searchResults);
+    }
+
+    /// <summary>
+    /// 📡 RSS feed endpoint
+    /// </summary>
+    [Route("rss")]
+    public async Task<IActionResult> Rss()
+    {
+        // TODO: Implement RSS feed generation
+        var posts = await _postService.GetPublishedPostsAsync(1, 20);
+        
+        // Placeholder - will need to generate actual RSS XML
+        Response.ContentType = "application/rss+xml";
+        return Content("<?xml version=\"1.0\"?><rss version=\"2.0\"><channel><title>Site RSS</title></channel></rss>");
+    }
+
+    /// <summary>
+    /// 📡 Atom feed endpoint
+    /// </summary>
+    [Route("atom")]
+    public async Task<IActionResult> Atom()
+    {
+        // TODO: Implement Atom feed generation
+        var posts = await _postService.GetPublishedPostsAsync(1, 20);
+        
+        // Placeholder - will need to generate actual Atom XML
+        Response.ContentType = "application/atom+xml";
+        return Content("<?xml version=\"1.0\"?><feed xmlns=\"http://www.w3.org/2005/Atom\"><title>Site Atom</title></feed>");
+    }
+
+    /// <summary>
+    /// ❌ Error page for unhandled exceptions
+    /// </summary>
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult Error()
+    {
+        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+    }
+}
