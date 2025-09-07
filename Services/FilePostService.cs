@@ -192,6 +192,20 @@ public class FilePostService : IPostService, IDisposable
     }
 
     /// <summary>
+    /// 📊 Gets the total count of published posts
+    /// </summary>
+    public Task<int> GetPublishedPostsCountAsync()
+    {
+        lock (_cacheLock)
+        {
+            var count = _postCache.Values
+                .Count(p => p.Status == PostStatus.Published && p.Type == PostType.Post);
+            
+            return Task.FromResult(count);
+        }
+    }
+
+    /// <summary>
     /// 🔍 Gets a post by its slug from memory cache
     /// </summary>
     public Task<Post?> GetPostBySlugAsync(string slug)

@@ -6,6 +6,7 @@ public interface IPostService
 {
     Task<List<Post>> GetAllPostsAsync();
     Task<List<Post>> GetPublishedPostsAsync(int page = 1, int pageSize = 5);
+    Task<int> GetPublishedPostsCountAsync();
     Task<Post?> GetPostBySlugAsync(string slug);
     Task<Post?> GetPostByFileNameAsync(string fileName);
     Task<List<Post>> GetPostsByCategoryAsync(string category);

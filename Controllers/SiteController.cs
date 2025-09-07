@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using QuillKit.Models;
+using QuillKit.Models.ViewModels;
 using QuillKit.Services;
 
 namespace QuillKit.Controllers;
@@ -23,9 +24,17 @@ public class SiteController : Controller
     /// </summary>
     public async Task<IActionResult> Index(int page = 1)
     {
-        // Simple list of all published posts for now
-        var posts = await _postService.GetPublishedPostsAsync(page, 10);
-        return View(posts);
+        var pageSize = _siteConfigService.Config.PostsPerPage;
+        
+        // Get paginated posts and total count
+        var posts = await _postService.GetPublishedPostsAsync(page, pageSize);
+        var totalPosts = await _postService.GetPublishedPostsCountAsync();
+        var totalPages = (int)Math.Ceiling((double)totalPosts / pageSize);
+        
+        // Create paginated view model
+        var paginatedPosts = new PaginatedViewModel<Post>(posts, page, totalPages, totalPosts, pageSize);
+        
+        return View(paginatedPosts);
     }
 
     /// <summary>
@@ -95,6 +104,8 @@ public class SiteController : Controller
             return NotFound();
         }
 
+        var pageSize = _siteConfigService.Config.PostsPerPage;
+
         // Get all posts and filter by category
         var allPosts = await _postService.GetAllPostsAsync();
         var categoryPosts = allPosts
@@ -103,11 +114,22 @@ public class SiteController : Controller
             .OrderByDescending(p => p.PubDate)
             .ToList();
 
+        // Apply pagination
+        var totalPosts = categoryPosts.Count;
+        var totalPages = (int)Math.Ceiling((double)totalPosts / pageSize);
+        var paginatedPosts = categoryPosts
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        // Create paginated view model
+        var paginatedViewModel = new PaginatedViewModel<Post>(paginatedPosts, page, totalPages, totalPosts, pageSize);
+
         ViewData["CategoryName"] = category;
-        ViewData["PostCount"] = categoryPosts.Count;
+        ViewData["PostCount"] = totalPosts;
         
         // Use the same Index view but with filtered posts
-        return View("Index", categoryPosts);
+        return View("Index", paginatedViewModel);
     }
 
     /// <summary>
