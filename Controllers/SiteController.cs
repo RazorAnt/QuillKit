@@ -85,7 +85,33 @@ public class SiteController : Controller
     }
 
     /// <summary>
-    /// 🔍 Search results page
+    /// � Category page showing posts in a specific category
+    /// </summary>
+    [Route("category/{category}")]
+    public async Task<IActionResult> Category(string category, int page = 1)
+    {
+        if (string.IsNullOrEmpty(category))
+        {
+            return NotFound();
+        }
+
+        // Get all posts and filter by category
+        var allPosts = await _postService.GetAllPostsAsync();
+        var categoryPosts = allPosts
+            .Where(p => p.Status == PostStatus.Published && p.Type == PostType.Post)
+            .Where(p => p.Categories.Any(c => c.Equals(category, StringComparison.OrdinalIgnoreCase)))
+            .OrderByDescending(p => p.PubDate)
+            .ToList();
+
+        ViewData["CategoryName"] = category;
+        ViewData["PostCount"] = categoryPosts.Count;
+        
+        // Use the same Index view but with filtered posts
+        return View("Index", categoryPosts);
+    }
+
+    /// <summary>
+    /// �🔍 Search results page
     /// </summary>
     [Route("search")]
     public async Task<IActionResult> Search(string query, int page = 1)

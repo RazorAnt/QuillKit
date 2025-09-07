@@ -2,11 +2,25 @@
 
 @{
     ViewData["Title"] = "Home";
+    var categoryName = ViewData["CategoryName"] as string;
+    var postCount = ViewData["PostCount"] as int?;
 }
 
 <div class="row">
     <!-- Main Content Area -->
     <div class="col-lg-9">
+        
+        @if (!string.IsNullOrEmpty(categoryName))
+        {
+            <div class="mb-4">
+                <h2 class="category-header">
+                    <i class="bi bi-folder2-open"></i> @categoryName
+                    <small class="text-muted">(@postCount posts)</small>
+                </h2>
+                <hr>
+            </div>
+        }
+        
         <div class="row">
             @foreach (var post in Model)
             {

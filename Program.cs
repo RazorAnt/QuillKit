@@ -51,6 +51,10 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Serve static files from wwwroot (CSS, JS, images, etc.)
+app.UseStaticFiles();
+
 app.UseRouting();
 app.UseAuthorization();
 
