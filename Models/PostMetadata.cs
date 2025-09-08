@@ -21,14 +21,23 @@ public class PostMetadata
     /// <summary>
     /// 🔄 Converts metadata to Post model
     /// </summary>
-    public Post ToPost(string content, string fileName)
+    public Post ToPost(string content, string fileName, SiteConfig? siteConfig = null)
     {
+        // Handle timezone conversion for dates
+        var pubDate = Date;
+        if (siteConfig != null && Date.Kind == DateTimeKind.Unspecified)
+        {
+            // If the date has no timezone info, treat it as being in the site's timezone
+            var timeZone = siteConfig.GetTimeZone();
+            pubDate = TimeZoneInfo.ConvertTimeToUtc(Date, timeZone);
+        }
+
         var post = new Post
         {
             Title = Title,
             Author = Author,
             Type = Enum.TryParse<PostType>(Type, true, out var postType) ? postType : PostType.Post,
-            PubDate = Date,
+            PubDate = pubDate,
             Categories = Categories ?? new List<string>(),
             Tags = Tags ?? new List<string>(),
             Image = Image,

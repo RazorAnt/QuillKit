@@ -10,6 +10,7 @@ public class FilePostService : IPostService, IDisposable
     private readonly string _contentPath;
     private readonly IContentService _contentService;
     private readonly PostParser _postParser;
+    private readonly SiteConfigService _siteConfigService;
     private readonly ILogger<FilePostService> _logger;
     private readonly Dictionary<string, Post> _postCache;
     private readonly FileSystemWatcher? _fileWatcher;
@@ -19,11 +20,13 @@ public class FilePostService : IPostService, IDisposable
         IConfiguration configuration, 
         IContentService contentService,
         PostParser postParser, 
+        SiteConfigService siteConfigService,
         ILogger<FilePostService> logger)
     {
         _contentPath = configuration["ContentPath"] ?? Path.Combine(Directory.GetCurrentDirectory(), "Content");
         _contentService = contentService;
         _postParser = postParser;
+        _siteConfigService = siteConfigService;
         _logger = logger;
         _postCache = new Dictionary<string, Post>(StringComparer.OrdinalIgnoreCase);
 
@@ -75,7 +78,7 @@ public class FilePostService : IPostService, IDisposable
             {
                 try
                 {
-                    var post = await _postParser.ParseMarkdownFileAsync(_contentService, file);
+                    var post = await _postParser.ParseMarkdownFileAsync(_contentService, file, _siteConfigService.Config);
                     if (post != null)
                     {
                         lock (_cacheLock)
@@ -146,7 +149,7 @@ public class FilePostService : IPostService, IDisposable
     {
         try
         {
-            var post = await _postParser.ParseMarkdownFileAsync(_contentService, relativePath);
+            var post = await _postParser.ParseMarkdownFileAsync(_contentService, relativePath, _siteConfigService.Config);
             if (post != null)
             {
                 lock (_cacheLock)

@@ -39,6 +39,7 @@ switch (contentProvider)
 // Register our other services
 builder.Services.AddSingleton<PostParser>();
 builder.Services.AddSingleton<SiteConfigService>();
+builder.Services.AddSingleton<SyndicationService>();
 
 var app = builder.Build();
 

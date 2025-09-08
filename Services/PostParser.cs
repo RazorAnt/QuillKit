@@ -26,31 +26,31 @@ public class PostParser
     /// <summary>
     /// 🔍 Parses a markdown file with YAML front matter
     /// </summary>
-    public Post? ParseMarkdownFile(string filePath)
+    public Post? ParseMarkdownFile(string filePath, SiteConfig? siteConfig = null)
     {
         if (!File.Exists(filePath))
             return null;
 
         var content = File.ReadAllText(filePath);
-        return ParseMarkdownContent(content, filePath);
+        return ParseMarkdownContent(content, filePath, siteConfig);
     }
 
     /// <summary>
     /// 🔍 Parses a markdown file with YAML front matter using content service
     /// </summary>
-    public async Task<Post?> ParseMarkdownFileAsync(IContentService contentService, string relativePath)
+    public async Task<Post?> ParseMarkdownFileAsync(IContentService contentService, string relativePath, SiteConfig? siteConfig = null)
     {
         if (!await contentService.FileExistsAsync(relativePath))
             return null;
 
         var content = await contentService.ReadFileAsync(relativePath);
-        return ParseMarkdownContent(content, relativePath);
+        return ParseMarkdownContent(content, relativePath, siteConfig);
     }
 
     /// <summary>
     /// 📝 Parses markdown content with YAML front matter
     /// </summary>
-    public Post? ParseMarkdownContent(string content, string fileName)
+    public Post? ParseMarkdownContent(string content, string fileName, SiteConfig? siteConfig = null)
     {
         var match = FrontMatterRegex.Match(content);
         
@@ -66,7 +66,7 @@ public class PostParser
         try
         {
             var metadata = _yamlDeserializer.Deserialize<PostMetadata>(yamlContent);
-            return metadata.ToPost(markdownContent, fileName);
+            return metadata.ToPost(markdownContent, fileName, siteConfig);
         }
         catch (Exception ex)
         {

@@ -27,6 +27,9 @@ public class SiteConfig
     [YamlMember(Alias = "date_format")]
     public string DateFormat { get; set; } = "MMMM dd, yyyy";
     
+    [YamlMember(Alias = "timezone")]
+    public string Timezone { get; set; } = "America/New_York"; // Eastern Time (handles EST/EDT automatically)
+    
     [YamlMember(Alias = "show_excerpts")]
     public bool ShowExcerpts { get; set; } = true;
     
@@ -93,6 +96,37 @@ public class SiteConfig
     public string TextColor => GetThemeProperty("text_color", "#333333");
     public string LinkColor => GetThemeProperty("link_color", "#EC9C24");
     public string Instapaper => GetThemeProperty("instapaper", "");
+
+    // Timezone utilities
+    public TimeZoneInfo GetTimeZone()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(Timezone);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            // Fallback to Eastern Time if timezone is invalid
+            return TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+        }
+    }
+
+    public DateTime ConvertToLocalTime(DateTime utcDateTime)
+    {
+        if (utcDateTime.Kind != DateTimeKind.Utc)
+        {
+            // If it's not UTC, assume it's already in the desired timezone
+            return utcDateTime;
+        }
+        
+        return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, GetTimeZone());
+    }
+
+    public string FormatDate(DateTime dateTime, string? customFormat = null)
+    {
+        var localTime = ConvertToLocalTime(dateTime);
+        return localTime.ToString(customFormat ?? DateFormat);
+    }
 }
 
 public class AuthorConfig

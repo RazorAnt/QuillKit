@@ -10,12 +10,14 @@ public class SiteController : Controller
 {
     private readonly IPostService _postService;
     private readonly SiteConfigService _siteConfigService;
+    private readonly SyndicationService _syndicationService;
     private readonly ILogger<SiteController> _logger;
 
-    public SiteController(IPostService postService, SiteConfigService siteConfigService, ILogger<SiteController> logger)
+    public SiteController(IPostService postService, SiteConfigService siteConfigService, SyndicationService syndicationService, ILogger<SiteController> logger)
     {
         _postService = postService;
         _siteConfigService = siteConfigService;
+        _syndicationService = syndicationService;
         _logger = logger;
     }
 
@@ -160,25 +162,31 @@ public class SiteController : Controller
     /// 📡 RSS feed endpoint
     /// </summary>
     [Route("rss")]
+    [Route("feed")]
+    [Route("feed/rss")]
     public async Task<IActionResult> Rss()
     {
-        // TODO: Implement RSS feed generation
         var posts = await _postService.GetPublishedPostsAsync(1, 20);
-        
-        // Placeholder - will need to generate actual RSS XML
-        Response.ContentType = "application/rss+xml";
-        return Content("<?xml version=\"1.0\"?><rss version=\"2.0\"><channel><title>Site RSS</title></channel></rss>");
+        var siteConfig = _siteConfigService.Config;
+
+        var rssXml = _syndicationService.GenerateRssFeed(posts, siteConfig);
+
+        Response.ContentType = "application/rss+xml; charset=utf-8";
+        Response.Headers["Cache-Control"] = "public, max-age=3600"; // Cache for 1 hour
+
+        return Content(rssXml, "application/rss+xml");
     }
 
     /// <summary>
-    /// 📡 Atom feed endpoint
+    ///  Atom feed endpoint
     /// </summary>
     [Route("atom")]
+    [Route("feed/atom")]
     public async Task<IActionResult> Atom()
     {
         // TODO: Implement Atom feed generation
         var posts = await _postService.GetPublishedPostsAsync(1, 20);
-        
+
         // Placeholder - will need to generate actual Atom XML
         Response.ContentType = "application/atom+xml";
         return Content("<?xml version=\"1.0\"?><feed xmlns=\"http://www.w3.org/2005/Atom\"><title>Site Atom</title></feed>");
