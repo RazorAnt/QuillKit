@@ -135,7 +135,46 @@ public class SiteController : Controller
     }
 
     /// <summary>
-    /// �🔍 Search results page
+    /// 🏷️ Tag page showing posts with a specific tag
+    /// </summary>
+    [Route("tag/{tag}")]
+    public async Task<IActionResult> Tag(string tag, int page = 1)
+    {
+        if (string.IsNullOrEmpty(tag))
+        {
+            return NotFound();
+        }
+
+        var pageSize = _siteConfigService.Config.PostsPerPage;
+
+        // Get all posts and filter by tag
+        var allPosts = await _postService.GetAllPostsAsync();
+        var tagPosts = allPosts
+            .Where(p => p.Status == PostStatus.Published && p.Type == PostType.Post)
+            .Where(p => p.Tags.Any(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase)))
+            .OrderByDescending(p => p.PubDate)
+            .ToList();
+
+        // Apply pagination
+        var totalPosts = tagPosts.Count;
+        var totalPages = (int)Math.Ceiling((double)totalPosts / pageSize);
+        var paginatedPosts = tagPosts
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        // Create paginated view model
+        var paginatedViewModel = new PaginatedViewModel<Post>(paginatedPosts, page, totalPages, totalPosts, pageSize);
+
+        ViewData["TagName"] = tag;
+        ViewData["PostCount"] = totalPosts;
+        
+        // Use the same Index view but with filtered posts
+        return View("Index", paginatedViewModel);
+    }
+
+    /// <summary>
+    /// 🔍 Search results page
     /// </summary>
     [Route("search")]
     public async Task<IActionResult> Search(string query, int page = 1)

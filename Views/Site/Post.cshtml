@@ -20,9 +20,22 @@
                         </span>
                         @if (Model.Categories.Any())
                         {
-                            <span>
+                            <span class="me-3">
                                 <i class="bi bi-folder"></i>
-                                @string.Join(", ", Model.Categories)
+                                @foreach (var category in Model.Categories)
+                                {
+                                    <a href="@Url.Action("Category", "Site", new { category = category })" class="text-decoration-none text-muted me-1">@category</a>@(category != Model.Categories.Last() ? "," : "")
+                                }
+                            </span>
+                        }
+                        @if (Model.Tags.Any())
+                        {
+                            <span>
+                                <i class="bi bi-tags"></i>
+                                @foreach (var tag in Model.Tags)
+                                {
+                                    <a href="@Url.Action("Tag", "Site", new { tag = tag })" class="text-decoration-none text-muted me-1">@tag</a>@(tag != Model.Tags.Last() ? "," : "")
+                                }
                             </span>
                         }
                     </div>
@@ -43,17 +56,6 @@
             
             <!-- Post Footer -->
             <footer class="post-footer mt-5 pt-4 border-top">
-                @if (Model.Tags.Any())
-                {
-                    <div class="post-tags mb-4">
-                        <h6 class="mb-2">Tags</h6>
-                        @foreach (var tag in Model.Tags)
-                        {
-                            <span class="badge bg-light me-1 mb-1">@tag</span>
-                        }
-                    </div>
-                }
-                
                 <!-- Share Buttons -->
                 <div class="post-share mb-4">
                     <p class="mb-2">

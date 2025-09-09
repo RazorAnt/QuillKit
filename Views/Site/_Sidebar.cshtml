@@ -129,4 +129,29 @@
         </div>
     }
 
+    <!-- Tags -->
+    @{
+        var postTags = allPosts
+            .Where(p => p.Type == QuillKit.Models.PostType.Post) // Only posts, not pages or micros
+            .SelectMany(p => p.Tags)
+            .GroupBy(t => t, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new { Tag = g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .ToList();
+    }
+    @if (postTags.Any())
+    {
+        <div class="sidebar-section">
+            <h5 class="sidebar-header">Tags</h5>
+            <div class="sidebar-content">
+                @foreach (var tagGroup in postTags)
+                {
+                    <div class="mb-2">
+                        <a href="@Url.Action("Tag", "Site", new { tag = tagGroup.Tag })" class="text-decoration-none text-dark">@tagGroup.Tag (@tagGroup.Count)</a>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
 </div>
