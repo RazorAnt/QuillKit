@@ -4,6 +4,7 @@
 title: "QuillKit"
 subtitle: "Your thoughts, published beautifully"
 description: "A modern, fast, markdown-based site engine"
+keywords: ""
 baseurl: "https://yoursite.com"
 posts_per_page: 10
 timezone: "America/New_York"  # Eastern Time (handles EST/EDT automatically)

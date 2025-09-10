@@ -8,6 +8,8 @@ public class SiteConfig
     public string Title { get; set; } = "QuillKit";
     public string Subtitle { get; set; } = "Your thoughts, published beautifully";
     public string Description { get; set; } = "";
+    public string Keywords { get; set; } = "";
+    [YamlMember(Alias = "baseurl")]
     public string BaseUrl { get; set; } = "";
     public string Url { get; set; } = "";
 

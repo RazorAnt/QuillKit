@@ -27,15 +27,17 @@ public class SiteController : Controller
     public async Task<IActionResult> Index(int page = 1)
     {
         var pageSize = _siteConfigService.Config.PostsPerPage;
-        
+
         // Get paginated posts and total count
         var posts = await _postService.GetPublishedPostsAsync(page, pageSize);
         var totalPosts = await _postService.GetPublishedPostsCountAsync();
         var totalPages = (int)Math.Ceiling((double)totalPosts / pageSize);
-        
+
         // Create paginated view model
         var paginatedPosts = new PaginatedViewModel<Post>(posts, page, totalPages, totalPosts, pageSize);
-        
+
+        SetSEOViewData("Home", "");
+
         return View(paginatedPosts);
     }
 
@@ -51,7 +53,7 @@ public class SiteController : Controller
         }
 
         var post = await _postService.GetPostBySlugAsync(slug);
-        
+
         if (post == null)
         {
             _logger.LogWarning("Post not found: {Slug}", slug);
@@ -63,6 +65,8 @@ public class SiteController : Controller
             _logger.LogWarning("Attempted to access unpublished post: {Slug}", slug);
             return NotFound();
         }
+
+        SetSEOViewData(post);
 
         return View(post);
     }
@@ -79,7 +83,7 @@ public class SiteController : Controller
         }
 
         var page = await _postService.GetPostBySlugAsync(slug);
-        
+
         if (page == null)
         {
             _logger.LogWarning("Page not found: {Slug}", slug);
@@ -91,6 +95,8 @@ public class SiteController : Controller
             _logger.LogWarning("Attempted to access unpublished page: {Slug}", slug);
             return NotFound();
         }
+
+        SetSEOViewData(page);
 
         return View(page);
     }
@@ -129,7 +135,9 @@ public class SiteController : Controller
 
         ViewData["CategoryName"] = category;
         ViewData["PostCount"] = totalPosts;
-        
+
+        SetSEOViewData($"Category: {category}", $"category/{category}");
+
         // Use the same Index view but with filtered posts
         return View("Index", paginatedViewModel);
     }
@@ -168,7 +176,9 @@ public class SiteController : Controller
 
         ViewData["TagName"] = tag;
         ViewData["PostCount"] = totalPosts;
-        
+
+        SetSEOViewData($"Tag: {tag}", $"tag/{tag}");
+
         // Use the same Index view but with filtered posts
         return View("Index", paginatedViewModel);
     }
@@ -194,6 +204,8 @@ public class SiteController : Controller
             .ToList();
 
         ViewData["Query"] = query;
+
+        SetSEOViewData("Search", "/search");
         return View(searchResults);
     }
 
@@ -239,4 +251,71 @@ public class SiteController : Controller
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
+
+    private void SetSEOViewData(string title, string slug)
+    {
+        var post = new Post { Title = title, Slug = slug, Type = PostType.Page };
+        SetSEOViewData(post);
+    }
+
+    private void SetSEOViewData(Post post)
+    {
+        var config = _siteConfigService.Config;
+        ViewData["Title"] = post.Title;
+        ViewData["FullTitle"] = $"{post.Title} | {config.Title}";
+
+        // Build proper base URL - fall back to request URL if config is incomplete
+        var baseUrl = config.BaseUrl;
+        if (string.IsNullOrWhiteSpace(baseUrl) || baseUrl == "/")
+        {
+            baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}";
+        }
+        baseUrl = baseUrl.TrimEnd('/');
+        
+        var cleanSlug = post.Slug.TrimStart('/');
+        ViewData["CanonicalUrl"] = string.IsNullOrEmpty(cleanSlug) ? baseUrl : $"{baseUrl}/{cleanSlug}";
+
+        // Description: prefer post.Description, then Excerpt, then site description
+        string? description = post.Description;
+        if (string.IsNullOrWhiteSpace(description))
+            description = post.Excerpt;
+        if (string.IsNullOrWhiteSpace(description))
+            description = config.Description ?? "";
+        ViewData["Description"] = description;
+
+        // Combine config keywords with post tags/categories
+        var allKeywords = new List<string>();
+        if (!string.IsNullOrEmpty(config.Keywords))
+        {
+            allKeywords.AddRange(config.Keywords.Split(',').Select(k => k.Trim()).Where(k => !string.IsNullOrEmpty(k)));
+        }
+        if (post.Tags != null)
+            allKeywords.AddRange(post.Tags);
+        if (post.Categories != null)
+            allKeywords.AddRange(post.Categories);
+        ViewData["Keywords"] = allKeywords.Any() ? string.Join(", ", allKeywords.Distinct()) : "";
+
+        // Open Graph & Twitter
+        if (!string.IsNullOrEmpty(post.Image))
+        {
+            // Handle both relative and absolute image URLs
+            if (post.Image.StartsWith("http"))
+            {
+                ViewData["OgImage"] = post.Image;
+            }
+            else
+            {
+                ViewData["OgImage"] = $"{baseUrl}{(post.Image.StartsWith('/') ? post.Image : '/' + post.Image)}";
+            }
+            ViewData["TwitterCard"] = "summary_large_image";
+        }
+        else
+        {
+            ViewData["TwitterCard"] = "summary";
+        }
+
+        // Set OG type
+        ViewData["OgType"] = post.Type == PostType.Post ? "article" : "website";
+    }
+
 }
