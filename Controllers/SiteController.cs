@@ -11,13 +11,15 @@ public class SiteController : Controller
     private readonly IPostService _postService;
     private readonly SiteConfigService _siteConfigService;
     private readonly SyndicationService _syndicationService;
+    private readonly SitemapService _sitemapService;
     private readonly ILogger<SiteController> _logger;
 
-    public SiteController(IPostService postService, SiteConfigService siteConfigService, SyndicationService syndicationService, ILogger<SiteController> logger)
+    public SiteController(IPostService postService, SiteConfigService siteConfigService, SyndicationService syndicationService, SitemapService sitemapService, ILogger<SiteController> logger)
     {
         _postService = postService;
         _siteConfigService = siteConfigService;
         _syndicationService = syndicationService;
+        _sitemapService = sitemapService;
         _logger = logger;
     }
 
@@ -226,6 +228,20 @@ public class SiteController : Controller
         Response.Headers["Cache-Control"] = "public, max-age=3600"; // Cache for 1 hour
 
         return Content(rssXml, "application/rss+xml");
+    }
+
+    /// <summary>
+    /// 🗺️ XML Sitemap endpoint
+    /// </summary>
+    [Route("sitemap.xml")]
+    public async Task<IActionResult> Sitemap()
+    {
+        var sitemapXml = await _sitemapService.GenerateSitemapAsync();
+
+        Response.ContentType = "application/xml; charset=utf-8";
+        Response.Headers["Cache-Control"] = "public, max-age=86400"; // Cache for 24 hours
+
+        return Content(sitemapXml, "application/xml");
     }
 
     /// <summary>

@@ -40,6 +40,7 @@ switch (contentProvider)
 builder.Services.AddSingleton<PostParser>();
 builder.Services.AddSingleton<SiteConfigService>();
 builder.Services.AddSingleton<SyndicationService>();
+builder.Services.AddSingleton<SitemapService>();
 
 var app = builder.Build();
 

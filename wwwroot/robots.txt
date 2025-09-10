@@ -1,0 +1,22 @@
+# robots.txt for QuillKit
+# This file tells search engines how to crawl this site
+
+# Allow all well-behaved search engines to crawl everything
+User-agent: *
+Allow: /
+
+# Block crawling of content source files and private areas
+Disallow: /Content/
+Disallow: /Private/
+Disallow: /bin/
+Disallow: /obj/
+
+# Block crawling of development/debug files
+Disallow: *.log
+Disallow: *.tmp
+
+# Point to sitemap (will use your actual domain when deployed)
+Sitemap: https://yoursite.com/sitemap.xml
+
+# Crawl delay (be nice to servers)
+Crawl-delay: 1
