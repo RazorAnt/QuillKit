@@ -1,6 +1,7 @@
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using QuillKit.Models;
+using Microsoft.Extensions.Configuration;
 
 namespace QuillKit.Services;
 
@@ -8,14 +9,16 @@ public class SiteConfigService
 {
     private readonly ILogger<SiteConfigService> _logger;
     private readonly IContentService _contentService;
+    private readonly IConfiguration _configuration;
     private readonly string _configPath = "Config/site-config.yml";
     private SiteConfig _config;
     private readonly object _lock = new();
 
-    public SiteConfigService(ILogger<SiteConfigService> logger, IContentService contentService)
+    public SiteConfigService(ILogger<SiteConfigService> logger, IContentService contentService, IConfiguration configuration)
     {
         _logger = logger;
         _contentService = contentService;
+        _configuration = configuration;
         _config = new SiteConfig(); // Default config
         
         // Load config at startup - blocking to ensure it's loaded before first use
@@ -57,11 +60,14 @@ public class SiteConfigService
                 .IgnoreUnmatchedProperties()
                 .Build();
 
-            var config = deserializer.Deserialize<SiteConfig>(yaml);
+            var config = deserializer.Deserialize<SiteConfig>(yaml) ?? new SiteConfig();
+            
+            // 🔄 Apply appsettings overrides for environment-specific settings
+            ApplyAppSettingsOverrides(config);
             
             lock (_lock)
             {
-                _config = config ?? new SiteConfig();
+                _config = config;
             }
 
             return _config;
@@ -70,6 +76,38 @@ public class SiteConfigService
         {
             _logger.LogError(ex, "Error loading site configuration from {ConfigPath}", _configPath);
             throw;
+        }
+    }
+
+    /// <summary>
+    /// 🔧 Apply appsettings overrides to YAML configuration
+    /// This allows environment-specific settings without modifying YAML files
+    /// </summary>
+    private void ApplyAppSettingsOverrides(SiteConfig config)
+    {
+        var siteConfigSection = _configuration.GetSection("SiteConfig");
+        
+        // Override BaseUrl from appsettings if present
+        var baseUrlOverride = siteConfigSection["BaseUrl"];
+        if (!string.IsNullOrWhiteSpace(baseUrlOverride))
+        {
+            config.BaseUrl = baseUrlOverride;
+            _logger.LogInformation("🔧 BaseUrl overridden from appsettings: {BaseUrl}", baseUrlOverride);
+        }
+        
+        // Override other environment-specific settings as needed
+        var titleOverride = siteConfigSection["Title"];
+        if (!string.IsNullOrWhiteSpace(titleOverride))
+        {
+            config.Title = titleOverride;
+            _logger.LogInformation("🔧 Title overridden from appsettings: {Title}", titleOverride);
+        }
+        
+        var descriptionOverride = siteConfigSection["Description"];
+        if (!string.IsNullOrWhiteSpace(descriptionOverride))
+        {
+            config.Description = descriptionOverride;
+            _logger.LogInformation("🔧 Description overridden from appsettings: {Description}", descriptionOverride);
         }
     }
 

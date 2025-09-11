@@ -85,13 +85,13 @@ switch (contentProvider)
         }
 
         // Serve static files from Content/theme/assets folder at /assets URL
-        var assetPath = Path.Combine(builder.Environment.ContentRootPath, "Content", "theme", "assets");
+        var assetPath = Path.Combine(builder.Environment.ContentRootPath, "Content", "Theme", "assets");
         if (Directory.Exists(assetPath))
         {
             app.UseStaticFiles(new StaticFileOptions
             {
                 FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
-                    Path.Combine(builder.Environment.ContentRootPath, "Content", "theme", "assets")),
+                    Path.Combine(builder.Environment.ContentRootPath, "Content", "Theme", "assets")),
                 RequestPath = "/assets"
             });
         }

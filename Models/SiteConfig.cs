@@ -64,41 +64,6 @@ public class SiteConfig
             : defaultValue;
     }
 
-    // public bool GetThemeProperty(string key, bool defaultValue = false)
-    // {
-    //     if (!Theme.ContainsKey(key) || Theme[key] == null) 
-    //         return defaultValue;
-        
-    //     return Theme[key] switch
-    //     {
-    //         bool boolValue => boolValue,
-    //         string stringValue => bool.TryParse(stringValue, out var result) && result,
-    //         _ => defaultValue
-    //     };
-    // }
-
-    // public int GetThemeProperty(string key, int defaultValue = 0)
-    // {
-    //     if (!Theme.ContainsKey(key) || Theme[key] == null) 
-    //         return defaultValue;
-        
-    //     return Theme[key] switch
-    //     {
-    //         int intValue => intValue,
-    //         string stringValue => int.TryParse(stringValue, out var result) ? result : defaultValue,
-    //         _ => defaultValue
-    //     };
-    // }
-
-    // Convenience properties for common theme values
-    public string PrimaryColor => GetThemeProperty("primary_color", "#EC9C24");
-    public string SecondaryColor => GetThemeProperty("secondary_color", "#333333");
-    public string AccentColor => GetThemeProperty("accent_color", "#666666");
-    public string BackgroundColor => GetThemeProperty("background_color", "#ffffff");
-    public string TextColor => GetThemeProperty("text_color", "#333333");
-    public string LinkColor => GetThemeProperty("link_color", "#EC9C24");
-    public string Instapaper => GetThemeProperty("instapaper", "");
-
     // Timezone utilities
     public TimeZoneInfo GetTimeZone()
     {
@@ -141,6 +106,7 @@ public class SocialConfig
 {
     public string Email { get; set; } = "";
     public string Feed { get; set; } = "";
+    [YamlMember(Alias = "github")]
     public string GitHub { get; set; } = "";
     public string Bluesky { get; set; } = "";
     public string Twitter { get; set; } = "";

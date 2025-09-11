@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.Razor;
 namespace QuillKit.Extensions;
 
 /// <summary>
-/// 🎨 Enables theme view overrides by adding /Content/Theme/Views to the view search path
+/// 🎨 Enables theme view overrides by adding /Theme/Views to the view search path
 /// </summary>
 public class ThemeViewLocationExpander : IViewLocationExpander
 {

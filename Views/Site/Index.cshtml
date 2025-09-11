@@ -1,3 +1,6 @@
+@using QuillKit.Services
+@using QuillKit.Extensions
+@inject SiteConfigService SiteConfigService
 @model QuillKit.Models.ViewModels.PaginatedViewModel<QuillKit.Models.Post>
 
 @{
@@ -29,7 +32,7 @@
                         @if (!string.IsNullOrEmpty(post.Image))
                         {
                             <div style="height: 200px; overflow: hidden;">
-                                <img src="@post.Image" class="card-img-top" alt="@post.Title" style="height: 100%; width: 100%; object-fit: cover;">
+                                <img src="@post.Image.ToAbsoluteImageUrl(SiteConfigService)" class="card-img-top" alt="@post.Title" style="height: 100%; width: 100%; object-fit: cover;">
                             </div>
                         }
                         <div class="card-body d-flex flex-column">

@@ -1,3 +1,6 @@
+@using QuillKit.Services
+@using QuillKit.Extensions
+@inject SiteConfigService SiteConfigService
 @model QuillKit.Models.Post
 
 @{
@@ -44,7 +47,7 @@
                 @if (!string.IsNullOrEmpty(Model.Image))
                 {
                     <div class="post-featured-image mb-4">
-                        <img src="@Model.Image" alt="@Model.Title" class="img-fluid rounded shadow-sm" />
+                        <img src="@Model.Image.ToAbsoluteImageUrl(SiteConfigService)" alt="@Model.Title" class="img-fluid rounded shadow-sm" />
                     </div>
                 }
             </header>
