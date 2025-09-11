@@ -16,12 +16,16 @@ var contentProvider = contentProviderString.ToLowerInvariant() switch
     "local" or "file" or _ => ContentProvider.Local
 };
 
+Console.WriteLine($"🔧 Content Provider: {contentProviderString} -> {contentProvider}");
+
 // 🎨 Configure theme view location expansion
 builder.Services.Configure<RazorViewEngineOptions>(options =>
 {
     // Note: We'll configure the view location expander after services are built
     // to avoid BuildServiceProvider issues
 });
+
+// Theme views are always served locally for performance
 
 // Configure services during build phase
 switch (contentProvider)
@@ -48,7 +52,7 @@ builder.Services.PostConfigure<RazorViewEngineOptions>(options =>
 {
     // Clear any existing expanders and add our theme expander
     options.ViewLocationExpanders.Clear();
-    options.ViewLocationExpanders.Add(new ThemeViewLocationExpander(builder.Environment, contentProvider));
+    options.ViewLocationExpanders.Add(new ThemeViewLocationExpander(builder.Environment));
 });
 
 var app = builder.Build();

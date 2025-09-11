@@ -1,21 +1,19 @@
 using Microsoft.AspNetCore.Mvc.Razor;
-using QuillKit.Models;
 
 namespace QuillKit.Extensions;
 
 /// <summary>
 /// 🎨 Enables theme view overrides by adding /Theme/Views to the view search path
-/// Works with both local files and Azure Blob Storage
+/// Theme views are always served locally for optimal performance
 /// </summary>
 public class ThemeViewLocationExpander : IViewLocationExpander
 {
     private readonly IWebHostEnvironment _environment;
-    private readonly ContentProvider _contentProvider;
 
-    public ThemeViewLocationExpander(IWebHostEnvironment environment, ContentProvider contentProvider)
+    public ThemeViewLocationExpander(IWebHostEnvironment environment)
     {
         _environment = environment;
-        _contentProvider = contentProvider;
+        Console.WriteLine($"🎨 ThemeViewLocationExpander created for local theme views");
     }
 
     public void PopulateValues(ViewLocationExpanderContext context)
@@ -27,25 +25,16 @@ public class ThemeViewLocationExpander : IViewLocationExpander
 
     public IEnumerable<string> ExpandViewLocations(ViewLocationExpanderContext context, IEnumerable<string> viewLocations)
     {
-        // 🔍 Check if theme views exist based on content provider
-        bool themeViewsExist = false;
+        // 🔍 Check if local theme views exist
+        var themeViewsPath = Path.Combine(_environment.ContentRootPath, "Content", "Theme", "Views");
+        var themeViewsExist = Directory.Exists(themeViewsPath);
         
-        if (_contentProvider == ContentProvider.Local)
-        {
-            // Local file system check
-            var themeViewsPath = Path.Combine(_environment.ContentRootPath, "Content", "Theme", "Views");
-            themeViewsExist = Directory.Exists(themeViewsPath);
-        }
-        else if (_contentProvider == ContentProvider.AzureBlob)
-        {
-            // For Azure Blob, we'll assume theme views exist if we have any theme content
-            // This is a reasonable assumption since theme is part of the content
-            themeViewsExist = true; // TODO: Could implement async check if needed
-        }
+        Console.WriteLine($"🔍 Local theme check: {themeViewsPath} exists: {themeViewsExist}");
         
         if (!themeViewsExist)
         {
             // 🚫 No theme directory, return original view locations unchanged
+            Console.WriteLine($"🚫 No theme views found, using default locations");
             return viewLocations;
         }
 
@@ -55,6 +44,8 @@ public class ThemeViewLocationExpander : IViewLocationExpander
             "/Content/Theme/Views/{1}/{0}.cshtml",      // Controller-specific views
             "/Content/Theme/Views/Shared/{0}.cshtml"    // Shared views
         };
+
+        Console.WriteLine($"✨ Adding theme view locations: {string.Join(", ", themeLocations)}");
 
         // 🎯 Combine theme locations with original locations (theme takes precedence)
         return themeLocations.Concat(viewLocations);
