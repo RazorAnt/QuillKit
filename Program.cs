@@ -8,12 +8,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// 🎨 Configure theme view location expansion
-builder.Services.Configure<RazorViewEngineOptions>(options =>
-{
-    options.ViewLocationExpanders.Add(new ThemeViewLocationExpander(builder.Environment));
-});
-
 // 🔄 Parse content provider configuration once
 var contentProviderString = builder.Configuration.GetValue<string>("ContentProvider", "Local");
 var contentProvider = contentProviderString.ToLowerInvariant() switch
@@ -21,6 +15,13 @@ var contentProvider = contentProviderString.ToLowerInvariant() switch
     "azureblob" or "azure" => ContentProvider.AzureBlob,
     "local" or "file" or _ => ContentProvider.Local
 };
+
+// 🎨 Configure theme view location expansion
+builder.Services.Configure<RazorViewEngineOptions>(options =>
+{
+    // Note: We'll configure the view location expander after services are built
+    // to avoid BuildServiceProvider issues
+});
 
 // Configure services during build phase
 switch (contentProvider)
@@ -41,6 +42,14 @@ builder.Services.AddSingleton<PostParser>();
 builder.Services.AddSingleton<SiteConfigService>();
 builder.Services.AddSingleton<SyndicationService>();
 builder.Services.AddSingleton<SitemapService>();
+
+// 🎨 Configure view location expander now that services are registered
+builder.Services.PostConfigure<RazorViewEngineOptions>(options =>
+{
+    // Clear any existing expanders and add our theme expander
+    options.ViewLocationExpanders.Clear();
+    options.ViewLocationExpanders.Add(new ThemeViewLocationExpander(builder.Environment, contentProvider));
+});
 
 var app = builder.Build();
 
@@ -64,11 +73,8 @@ app.UseAuthorization();
 switch (contentProvider)
 {
     case ContentProvider.AzureBlob:
-        // TODO: Implement Azure Blob static file serving
-        // Media and theme assets will be served directly from blob storage URLs
-        // This requires either:
-        // 1. Custom middleware to proxy blob requests, or  
-        // 2. Direct blob URLs in views/content
+        // 🌐 Add Azure Blob static file middleware for /media and /assets
+        app.UseMiddleware<AzureBlobStaticFileMiddleware>();
         break;
     case ContentProvider.Local:
     default:
