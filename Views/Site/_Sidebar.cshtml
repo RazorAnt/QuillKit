@@ -111,7 +111,7 @@
             .SelectMany(p => p.Categories)
             .GroupBy(c => c, StringComparer.OrdinalIgnoreCase)
             .Select(g => new { Category = g.Key, Count = g.Count() })
-            .OrderByDescending(x => x.Count)
+            .OrderBy(x => x.Category, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
     @if (postCategories.Any())
@@ -136,7 +136,7 @@
             .SelectMany(p => p.Tags)
             .GroupBy(t => t, StringComparer.OrdinalIgnoreCase)
             .Select(g => new { Tag = g.Key, Count = g.Count() })
-            .OrderByDescending(x => x.Count)
+            .OrderBy(x => x.Tag, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
     @if (postTags.Any())
@@ -144,12 +144,13 @@
         <div class="sidebar-section">
             <h5 class="sidebar-header">Tags</h5>
             <div class="sidebar-content">
-                @foreach (var tagGroup in postTags)
-                {
-                    <div class="mb-2">
-                        <a href="@Url.Action("Tag", "Site", new { tag = tagGroup.Tag })" class="text-decoration-none text-dark">@tagGroup.Tag (@tagGroup.Count)</a>
-                    </div>
-                }
+                <p class="mb-0">
+                    @for (int i = 0; i < postTags.Count; i++)
+                    {
+                        var tagGroup = postTags[i];
+                        <a href="@Url.Action("Tag", "Site", new { tag = tagGroup.Tag })" class="text-decoration-none text-dark">@tagGroup.Tag</a>@(i < postTags.Count - 1 ? ", " : "")
+                    }
+                </p>
             </div>
         </div>
     }
