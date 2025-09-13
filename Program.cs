@@ -50,8 +50,7 @@ builder.Services.AddSingleton<SitemapService>();
 // 🎨 Configure view location expander now that services are registered
 builder.Services.PostConfigure<RazorViewEngineOptions>(options =>
 {
-    // Clear any existing expanders and add our theme expander
-    options.ViewLocationExpanders.Clear();
+    // Add our theme expander (don't clear existing ones to preserve default view locations)
     options.ViewLocationExpanders.Add(new ThemeViewLocationExpander(builder.Environment));
 });
 

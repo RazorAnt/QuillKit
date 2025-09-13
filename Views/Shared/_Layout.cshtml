@@ -59,7 +59,7 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light navbar-cream">
         <div class="container">
-            <a class="navbar-brand fw-bold" asp-controller="Site" asp-action="Index">
+            <a class="navbar-brand fw-bold" href="/">
                 <img src="~/images/quill-icon.png" alt="QuillKit" width="30" height="30" style="margin-bottom: 5px;">
                 @config.Title
             </a>
@@ -75,11 +75,13 @@
                         <li class="nav-item">
                             @if (navItem.Url == "/" || navItem.Title.ToLower() == "home")
                             {
-                                <a class="nav-link" asp-controller="Site" asp-action="Index">@navItem.Title</a>
+                                <a class="nav-link" href="/">@navItem.Title</a>
                             }
                             else if (navItem.Url.StartsWith("/"))
                             {
-                                <a class="nav-link" asp-controller="Site" asp-action="Page" asp-route-slug="@navItem.Url.TrimStart('/')">@navItem.Title</a>
+                                var pageSlug = navItem.Url.TrimStart('/');
+                                var pageUrl = $"/page/{pageSlug}";
+                                <a class="nav-link" href="@pageUrl">@navItem.Title</a>
                             }
                             else
                             {

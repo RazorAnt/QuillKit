@@ -41,8 +41,8 @@ public class ThemeViewLocationExpander : IViewLocationExpander
         // ✨ Add theme view locations BEFORE default locations for priority override
         var themeLocations = new[]
         {
-            "/Content/Theme/Views/{1}/{0}.cshtml",      // Controller-specific views
-            "/Content/Theme/Views/Shared/{0}.cshtml"    // Shared views
+            "~/Content/Theme/Views/{1}/{0}.cshtml",      // Controller-specific views
+            "~/Content/Theme/Views/Shared/{0}.cshtml"    // Shared views
         };
 
         Console.WriteLine($"✨ Adding theme view locations: {string.Join(", ", themeLocations)}");

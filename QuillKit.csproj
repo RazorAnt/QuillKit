@@ -4,6 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultContentItems>false</EnableDefaultContentItems>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +14,22 @@
     <PackageReference Include="WebMarkupMin.AspNetCore8" Version="2.15.2" />
     <PackageReference Include="System.ServiceModel.Syndication" Version="8.0.0" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Content Include="Content\\**\\*.*">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Views/**/*.cshtml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Content/Theme/Views/**/*.*">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
