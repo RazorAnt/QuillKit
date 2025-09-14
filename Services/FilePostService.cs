@@ -285,28 +285,41 @@ public class FilePostService : IPostService, IDisposable
     /// </summary>
     public async Task<Post> SavePostAsync(Post post)
     {
+        // Ensure slug
         if (string.IsNullOrEmpty(post.Slug))
         {
             post.Slug = GenerateSlug(post.Title);
         }
 
-        var fileName = $"{post.Slug}.md";
+        // Determine target file name. If the post already has a FileName (editing existing file), prefer that.
+        var targetFileName = !string.IsNullOrEmpty(post.FileName) ? post.FileName : $"{post.Slug}.md";
+
+        // If the slug doesn't match the FileName, ensure FileName's slug is in sync for cache keying
+        var resultingSlug = Path.GetFileNameWithoutExtension(targetFileName);
+        post.Slug = resultingSlug;
 
         var markdownContent = _postParser.SerializeToMarkdown(post);
-        
-        await _contentService.WriteFileAsync(fileName, markdownContent);
-        
-        post.FileName = fileName;
+
+        await _contentService.WriteFileAsync(targetFileName, markdownContent);
+
+        post.FileName = targetFileName;
         post.LastModified = DateTime.UtcNow;
 
-        // Update cache immediately
+        // Update cache immediately - remove any old entry for a previous slug if necessary
         lock (_cacheLock)
         {
+            // Remove entries where FileName matched a different slug previously
+            var keysToRemove = _postCache.Keys.Where(k => string.Equals(_postCache[k].FileName, targetFileName, StringComparison.OrdinalIgnoreCase) && k != post.Slug).ToList();
+            foreach (var k in keysToRemove)
+            {
+                _postCache.Remove(k);
+            }
+
             _postCache[post.Slug] = post;
         }
 
-        _logger.LogInformation("💾 Saved post: {Title} to {FileName}", post.Title, fileName);
-        
+        _logger.LogInformation("💾 Saved post: {Title} to {FileName}", post.Title, targetFileName);
+
         return post;
     }
 

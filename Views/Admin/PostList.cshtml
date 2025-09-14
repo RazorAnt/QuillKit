@@ -1,0 +1,58 @@
+@using QuillKit.Models
+@using QuillKit.Services
+@inject SiteConfigService SiteConfigService
+
+@{
+    ViewData["Title"] = "Manage Posts";
+    var posts = Model as List<Post> ?? new List<Post>();
+}
+
+<div class="row">
+    <div class="col-lg-9">
+        <div class="mb-4">
+            <h1 class="h3">Posts</h1>
+            <p class="text-muted">List of all posts and pages (sorted by publish date)</p>
+            <hr />
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Actions</th>
+                        <th>Type</th>
+                        <th>Title / File</th>
+                        <th>Publish Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in posts.OrderByDescending(x => x.PubDate))
+                    {
+                        <tr>
+                            <td>
+                                <a class="btn btn-sm btn-outline-primary mb-1" href="/admin/editor/@p.Slug">Edit</a>
+                                <form method="post" action="/admin/delete/@p.Slug" style="display:inline;" onsubmit="return confirm('Delete this post?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                </form>
+                            </td>
+                            <td>@(p.Type.ToString())</td>
+                            <td>
+                                <a href="@p.GetUrl()">@p.Title</a>
+                                <div class="text-muted small">@p.FileName</div>
+                            </td>
+                            <td>@p.PubDate.ToString("yyyy/MM/dd")</td>
+                            <td>@(p.Status == PostStatus.Published ? "Published" : "Draft")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="col-lg-3">
+        <div class="sidebar">
+            @await Html.PartialAsync("_AdminSidebar")
+        </div>
+    </div>
+</div>

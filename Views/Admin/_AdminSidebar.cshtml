@@ -1,0 +1,25 @@
+@using QuillKit.Services
+@inject SiteConfigService SiteConfigService
+@inject IPostService PostService
+@{
+    var config = SiteConfigService.Config;
+}
+
+<!-- Sidebar -->
+<div class="sticky-sidebar">
+    <div class="list-group list-group-flush admin-sidebar">
+        <a href="/admin" class="list-group-item list-group-item-action">Dashboard</a>
+        <a href="/admin/backup" class="list-group-item list-group-item-action">Backup Data</a>
+        <a href="/admin/drafts" class="list-group-item list-group-item-action">Drafts</a>
+        <a href="/admin/micro" class="list-group-item list-group-item-action">Micro</a>
+        <a href="/admin/media" class="list-group-item list-group-item-action">Media</a>
+        <a href="/admin/pages" class="list-group-item list-group-item-action">Pages</a>
+        <a href="/admin/posts" class="list-group-item list-group-item-action">Posts</a>
+        <a href="/admin/settings" class="list-group-item list-group-item-action">Settings</a>
+        <a href="/admin/logout" class="list-group-item list-group-item-action">Logout</a>
+    </div>
+
+    <!-- Upload -->
+    
+
+</div>

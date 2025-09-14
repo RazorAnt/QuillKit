@@ -8,6 +8,15 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// Add session support for admin authentication
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.IdleTimeout = TimeSpan.FromHours(2);
+});
+
 // 🔄 Parse content provider configuration once
 var contentProviderString = builder.Configuration.GetValue<string>("ContentProvider", "Local");
 var contentProvider = contentProviderString.ToLowerInvariant() switch
@@ -70,6 +79,9 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+// Enable session middleware so HttpContext.Session is available
+app.UseSession();
 app.UseAuthorization();
 
 // Configure static file serving based on content provider

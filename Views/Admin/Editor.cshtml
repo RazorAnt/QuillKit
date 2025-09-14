@@ -1,0 +1,183 @@
+@using QuillKit.Models
+@model Post
+@{
+    ViewData["Title"] = Model == null || string.IsNullOrEmpty(Model.Title) ? "New Post" : "Edit Post";
+}
+
+<div class="row">
+    <div class="col-lg-9">
+        <div class="mb-4">
+            <h1 class="h3">@ViewData["Title"]</h1>
+            <hr />
+        </div>
+
+        <form method="post" action="/admin/editor">
+            <input type="hidden" name="FileName" value="@Model?.FileName" />
+
+            <div>
+                <ul class="nav nav-tabs" id="editorTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="metadata-tab" data-bs-toggle="tab" data-bs-target="#metadata" type="button" role="tab" aria-controls="metadata" aria-selected="true">Metadata</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="content-tab" data-bs-toggle="tab" data-bs-target="#content" type="button" role="tab" aria-controls="content" aria-selected="false">Content</button>
+                    </li>
+                </ul>
+                <div class="tab-content border p-3" id="editorTabsContent">
+                    <div class="tab-pane fade show active" id="metadata" role="tabpanel" aria-labelledby="metadata-tab">
+                        <div class="mb-3 mt-2">
+                            <label class="form-label">Title</label>
+                            <input class="form-control" name="Title" value="@Model?.Title" />
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Slug</label>
+                                <input class="form-control" name="Slug" value="@Model?.Slug" />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Publish Date</label>
+                                <input class="form-control" name="PubDate" value='@(Model?.PubDate.ToString("yyyy-MM-dd"))' type="date" />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" name="Status" id="select-status" data-selected="@Model?.Status.ToString()">
+                                    <!-- options populated by JS to avoid Razor tag-helper parsing issues -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Type</label>
+                                <select class="form-select" name="Type" id="select-type" data-selected="@Model?.Type.ToString()">
+                                    <!-- options populated by JS to avoid Razor tag-helper parsing issues -->
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Author</label>
+                                <input class="form-control" name="Author" value="@Model?.Author" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Categories (comma separated)</label>
+                            <input class="form-control" name="CategoriesCsv" id="categories-csv" value="@(Model != null ? string.Join(",", Model.Categories) : "")" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tags (comma separated)</label>
+                            <input class="form-control" name="TagsCsv" id="tags-csv" value="@(Model != null ? string.Join(",", Model.Tags) : "")" />
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Image URL</label>
+                                <input class="form-control" name="Image" value="@Model?.Image" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Link</label>
+                                <input class="form-control" name="Link" value="@Model?.Link" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <input class="form-control" name="Description" value="@Model?.Description" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Excerpt</label>
+                            <textarea class="form-control" name="Excerpt" rows="3">@Model?.Excerpt</textarea>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="content" role="tabpanel" aria-labelledby="content-tab">
+                        <div class="mb-3 mt-2">
+                            <label class="form-label">Content (Markdown)</label>
+                            <textarea id="editor-content" name="Content" class="form-control" rows="20">@Model?.Content</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-3">
+                <button class="btn btn-primary" type="submit">Save</button>
+                <a class="btn btn-secondary" href="/admin/posts">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-lg-3">
+        <div class="sidebar">
+            @await Html.PartialAsync("_AdminSidebar")
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+    <script>
+        // Populate selects at runtime to avoid embedding <option> tags in Razor source
+        document.addEventListener('DOMContentLoaded', function() {
+            var typeSelect = document.getElementById('select-type');
+            if (typeSelect) {
+                var selectedType = typeSelect.getAttribute('data-selected') || 'Post';
+                typeSelect.innerHTML = '';
+                var optPost = document.createElement('option'); optPost.value = 'Post'; optPost.text = 'Post';
+                var optPage = document.createElement('option'); optPage.value = 'Page'; optPage.text = 'Page';
+                typeSelect.appendChild(optPost);
+                typeSelect.appendChild(optPage);
+                typeSelect.value = selectedType;
+            }
+
+            var statusSelect = document.getElementById('select-status');
+            if (statusSelect) {
+                var selectedStatus = statusSelect.getAttribute('data-selected') || 'Draft';
+                statusSelect.innerHTML = '';
+                var optPub = document.createElement('option'); optPub.value = 'Published'; optPub.text = 'Published';
+                var optDraft = document.createElement('option'); optDraft.value = 'Draft'; optDraft.text = 'Draft';
+                statusSelect.appendChild(optPub);
+                statusSelect.appendChild(optDraft);
+                statusSelect.value = selectedStatus;
+            }
+        });
+    </script>
+    <script>
+        // Keep EasyMDE reference in outer scope so we can initialize/refresh it when the Content tab becomes visible
+        var easyMDE;
+        function ensureEasyMDE() {
+            if (easyMDE) return easyMDE;
+            var textarea = document.getElementById('editor-content');
+            if (!textarea) return null;
+            easyMDE = new EasyMDE({ element: textarea, spellChecker: false, autosave: { enabled: false } });
+            return easyMDE;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // If content tab is visible on load (rare), initialize immediately
+            var contentPane = document.getElementById('content');
+            if (contentPane && contentPane.classList.contains('show') && contentPane.classList.contains('active')) {
+                ensureEasyMDE();
+            }
+
+            // Listen for any tab being shown; if it's the content tab, init/refresh EasyMDE
+            document.addEventListener('shown.bs.tab', function (e) {
+                try {
+                    var target = e.target || e.srcElement;
+                    if (target && target.getAttribute && target.getAttribute('data-bs-target') === '#content') {
+                        var em = ensureEasyMDE();
+                        // refresh after a short tick to give Bootstrap time to finish the show transition
+                        setTimeout(function () {
+                            if (em && em.codemirror && typeof em.codemirror.refresh === 'function') {
+                                em.codemirror.refresh();
+                            }
+                        }, 50);
+                    }
+                } catch (err) {
+                    console.warn('Error handling shown.bs.tab for EasyMDE', err);
+                }
+            });
+        });
+    </script>
+}

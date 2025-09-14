@@ -1,0 +1,90 @@
+@using QuillKit.Services
+@using QuillKit.Extensions
+@inject SiteConfigService SiteConfigService
+
+@{
+    ViewData["Title"] = "Admin Dashboard";
+
+    var publishedPosts = ViewData["PublishedPosts"] as int? ?? 0;
+    var draftPosts = ViewData["DraftPosts"] as int? ?? 0;
+    var publishedPages = ViewData["PublishedPages"] as int? ?? 0;
+    var draftPages = ViewData["DraftPages"] as int? ?? 0;
+    var contentProvider = ViewData["ContentProvider"] as string ?? "Local";
+    var baseUrl = ViewData["BaseUrl"] as string ?? "/";
+}
+
+<div class="row">
+    <!-- Main Content Area -->
+    <div class="col-lg-9">
+        
+        <div class="mb-4">
+            <h1 class="h3">Admin Dashboard</h1>
+            <p class="text-muted">Overview of site content and configuration</p>
+            <hr>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 col-lg-3">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-title">Total Posts</h6>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fs-4 fw-bold">@publishedPosts</div>
+                                <div class="text-muted small">Published</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fs-4 fw-bold text-secondary">@draftPosts</div>
+                                <div class="text-muted small">Drafts</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-title">Total Pages</h6>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fs-4 fw-bold">@publishedPages</div>
+                                <div class="text-muted small">Published</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fs-4 fw-bold text-secondary">@draftPages</div>
+                                <div class="text-muted small">Drafts</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-title">Content Provider</h6>
+                        <div class="fs-5">@contentProvider</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-title">Base URL</h6>
+                        <div class="fs-6 text-truncate">@baseUrl</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-3">
+        <div class="sidebar">
+            @await Html.PartialAsync("_AdminSidebar")
+        </div>
+    </div>
+</div>
