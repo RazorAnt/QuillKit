@@ -2,18 +2,18 @@
 title: A sample markdown post
 author: your name
 type: Post
-date: "2015-01-17T11:00:00"
-categories: 
-  - QuillKit
-tags: 
-  - Sample
+date: 2015-01-17T00:00:00.0000000
+categories:
+- QuillKit
+tags:
+- Sample
 image: http://i.imgur.com/01eE8gw.jpg
-link: none
-slug: a-sample-markdown-post
+link: 
+slug: a-sample-post
 description: markdown post.
 status: Published
 excerpt: This blog post uses a custom excerpt.
----  
+---
 
 This blog post uses [Markdown][1]. It supports **standard** markdown syntax.  In addition, there are a handful of helper codes for videos (youtube and vimeo) and for working with images with lightbox.
 
@@ -35,23 +35,3 @@ Below this section is a gallery.  You can set 1, 2, or 3 columns across and it s
 [/gallery]
 
 [1]: http://daringfireball.net/projects/markdown/
-
-
-
-
-        
-
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        

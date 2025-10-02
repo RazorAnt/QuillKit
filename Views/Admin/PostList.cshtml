@@ -27,14 +27,16 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var p in posts.OrderByDescending(x => x.PubDate))
+                    @foreach (var p in posts)
                     {
                         <tr>
                             <td>
-                                <a class="btn btn-sm btn-outline-primary mb-1" href="/admin/editor/@p.Slug">Edit</a>
-                                <form method="post" action="/admin/delete/@p.Slug" style="display:inline;" onsubmit="return confirm('Delete this post?');">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                                </form>
+                                <div class="d-flex align-items-center gap-2">
+                                    <a class="btn btn-sm btn-outline-primary" href="/admin/editor/@p.Slug">Edit</a>
+                                    <form method="post" action="/admin/delete/@p.Slug" style="display:inline;" onsubmit="return confirm('Delete this post?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </div>
                             </td>
                             <td>@(p.Type.ToString())</td>
                             <td>

@@ -146,7 +146,6 @@ public class AdminController : Controller
     [Route("admin/editor/{slug?}")]
     public async Task<IActionResult> Editor(string? slug = null)
     {
-        // TODO: Not started
         Post? post = null;
         
         if (!string.IsNullOrEmpty(slug))
@@ -159,7 +158,6 @@ public class AdminController : Controller
             }
         }
         
-        // TODO: Implement rich editor interface (EasyMDE)
         return View(post);
     }
 
@@ -205,35 +203,70 @@ public class AdminController : Controller
             post.FileName = Request.Form["FileName"].FirstOrDefault() ?? post.FileName;
         }
 
-        await _postService.SavePostAsync(post);
-        _logger.LogInformation("Post saved: {Title}", post.Title);
+        try
+        {
+            await _postService.SavePostAsync(post);
+            _logger.LogInformation("Post saved: {Title}", post.Title);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save post: {Title}", post.Title);
+            ModelState.AddModelError("", $"Failed to save post: {ex.Message}");
+            return View("Editor", post);
+        }
 
-        return RedirectToAction("PostList");
+        // Redirect to appropriate list based on post type and status
+        return post.Status == PostStatus.Draft 
+            ? RedirectToAction("DraftList")
+            : post.Type == PostType.Page 
+                ? RedirectToAction("PageList") 
+                : RedirectToAction("PostList");
     }
 
     /// <summary>
-    /// 📚 Admin post list - manage all posts/pages/drafts
+    /// 📚 Admin post list - manage all posts
     /// </summary>
     [Route("admin/posts")]
     public async Task<IActionResult> PostList(string? filter = null)
     {
-        // TODO: Implement post list with filtering (all, posts, pages, drafts)
         var allPosts = await _postService.GetAllPostsAsync();
-        
-        var filteredPosts = filter?.ToLower() switch
-        {
-            "posts" => allPosts.Where(p => p.Type == PostType.Post).ToList(),
-            "pages" => allPosts.Where(p => p.Type == PostType.Page).ToList(),
-            "drafts" => allPosts.Where(p => p.Status == PostStatus.Draft).ToList(),
-            _ => allPosts
-        };
-        
-        ViewData["Filter"] = filter;
-        return View(filteredPosts);
+        var posts = allPosts.Where(p => p.Type == PostType.Post)
+                            .OrderByDescending(p => p.PubDate)
+                            .ToList();
+
+        return View(posts);
     }
 
     /// <summary>
-    /// 🗑️ Delete post
+    /// 📚 Admin drafts list - manage all drafts
+    /// </summary>
+    [Route("admin/drafts")]
+    public async Task<IActionResult> DraftList(string? filter = null)
+    {
+        var allPosts = await _postService.GetAllPostsAsync();
+        var drafts = allPosts.Where(p => p.Status == PostStatus.Draft)
+                            .OrderBy(p => p.Title)
+                            .ToList();
+
+        return View("PostList", drafts);
+    }
+
+    /// <summary>
+    /// � Admin page list - manage all pages
+    /// </summary>
+    [Route("admin/pages")]
+    public async Task<IActionResult> PageList()
+    {
+        var allPosts = await _postService.GetAllPostsAsync();
+        var pages = allPosts.Where(p => p.Type == PostType.Page)
+                            .OrderBy(p => p.Title)
+                            .ToList();
+
+        return View("PostList", pages);
+    }
+
+    /// <summary>
+    /// �🗑️ Delete post
     /// </summary>
     [HttpPost]
     [Route("admin/delete/{slug}")]
