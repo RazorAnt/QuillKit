@@ -1,0 +1,143 @@
+@using System.IO
+@using System.Linq
+@using QuillKit.Services
+@inject SiteConfigService SiteConfigService
+
+@{
+    ViewData["Title"] = "Media Management";
+    var mediaFiles = Model as List<string> ?? new List<string>();
+}
+
+<div class="row">
+    <div class="col-lg-9">
+        <div class="mb-4">
+            <h1 class="h3">Media Management</h1>
+            <p class="text-muted">Upload and manage media files</p>
+            <hr />
+        </div>
+
+        <!-- Upload Form -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Upload New Media</h5>
+                <form method="post" action="/admin/media/upload" enctype="multipart/form-data" class="d-flex align-items-center gap-3">
+                    <input type="file" class="form-control" name="file" accept="image/*,.zip,.pdf,.mp4,.mov,.avi" />
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </form>
+                @if (ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+                {
+                    <div class="alert alert-danger mt-3">
+                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <div>@error.ErrorMessage</div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Media Files List -->
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Actions</th>
+                        <th>File Name</th>
+                        <th>Preview</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!mediaFiles.Any())
+                    {
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-4">
+                                No media files found. Upload some files to get started!
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var file in mediaFiles.OrderBy(f => f))
+                    {
+                        var fileName = System.IO.Path.GetFileName(file);
+                        var fileExtension = System.IO.Path.GetExtension(file).ToLower();
+                        var relativePath = $"/media/{fileName}";
+                        var mediaUrl = $"{SiteConfigService.Config.BaseUrl}{relativePath}";
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('@mediaUrl', this)" title="Copy Link">
+                                        📋 Copy Link
+                                    </button>
+                                    <form method="post" action="/admin/media/delete" style="display:inline;" onsubmit="return confirm('Delete this media file?');">
+                                        <input type="hidden" name="fileName" value="@fileName" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                            🗑️ Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <strong>@fileName</strong>
+                                    <div class="text-muted small">@mediaUrl</div>
+                                </div>
+                            </td>
+                            <td>
+                                @{
+                                    var isImage = fileExtension == ".jpg" || fileExtension == ".jpeg" || fileExtension == ".png" || fileExtension == ".gif" || fileExtension == ".webp";
+                                    var isVideo = fileExtension == ".mp4" || fileExtension == ".mov" || fileExtension == ".avi" || fileExtension == ".webm";
+                                    var isArchive = fileExtension == ".zip" || fileExtension == ".rar" || fileExtension == ".7z";
+                                }
+                                @if (isImage)
+                                {
+                                    <img src="@relativePath" alt="@fileName" class="img-thumbnail" style="max-width: 100px; max-height: 60px;" />
+                                }
+                                else if (isVideo)
+                                {
+                                    <span class="badge bg-info">🎥 Video</span>
+                                }
+                                else if (fileExtension == ".pdf")
+                                {
+                                    <span class="badge bg-danger">📄 PDF</span>
+                                }
+                                else if (isArchive)
+                                {
+                                    <span class="badge bg-warning">📦 Archive</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">📄 File</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="col-lg-3">
+        <div class="sidebar">
+            @await Html.PartialAsync("_AdminSidebar")
+        </div>
+    </div>
+</div>
+
+<script>
+function copyToClipboard(text, buttonElement) {
+    navigator.clipboard.writeText(text).then(function() {
+        // Show a temporary success message
+        var originalText = buttonElement.innerHTML;
+        buttonElement.innerHTML = '✅ Copied!';
+        buttonElement.classList.add('btn-success');
+        buttonElement.classList.remove('btn-outline-primary');
+        
+        setTimeout(function() {
+            buttonElement.innerHTML = originalText;
+            buttonElement.classList.remove('btn-success');
+            buttonElement.classList.add('btn-outline-primary');
+        }, 2000);
+    }).catch(function(err) {
+        alert('Failed to copy: ' + err);
+    });
+}
+</script>

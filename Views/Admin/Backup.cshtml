@@ -1,0 +1,73 @@
+@{
+    ViewData["Title"] = "Backup Data";
+}
+
+<div class="row">
+    <div class="col-lg-9">
+        <div class="mb-4">
+            <h1 class="h3">Backup Data</h1>
+            <p class="text-muted">Download a complete backup of your content</p>
+            <hr />
+        </div>
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">💾 Download Complete Backup</h5>
+                <p class="card-text">
+                    This will create a ZIP file containing:
+                </p>
+                <ul>
+                    <li>All markdown files (posts and pages)</li>
+                    <li>All media files (images, videos, etc.)</li>
+                    <li>Configuration files (site-config.yml)</li>
+                </ul>
+                <p class="text-muted">
+                    <small>The backup file will be generated in memory and downloaded directly to your computer.</small>
+                </p>
+                
+                <form method="post" action="/admin/backup/download" id="backupForm">
+                    <button type="button" class="btn btn-primary btn-lg" onclick="confirmBackup()">
+                        📦 Download Backup
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-4" role="alert">
+            <strong>💡 Tip:</strong> Regular backups are recommended before making major changes to your site configuration or content.
+        </div>
+    </div>
+
+    <div class="col-lg-3">
+        <partial name="_AdminSidebar" />
+    </div>
+</div>
+
+<script>
+function confirmBackup() {
+    if (confirm('Generate and download a backup of all your content?')) {
+        // Show a loading message
+        const button = document.querySelector('#backupForm button');
+        const originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '⏳ Generating backup...';
+        
+        // Submit the form
+        document.getElementById('backupForm').submit();
+        
+        // Re-enable button after a delay (backup is downloading)
+        setTimeout(() => {
+            button.disabled = false;
+            button.innerHTML = originalText;
+        }, 3000);
+    }
+}
+</script>

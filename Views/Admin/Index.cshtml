@@ -23,6 +23,32 @@
             <hr>
         </div>
 
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <!-- Quick Actions -->
+        <div class="mb-4">
+            <form method="post" action="/admin/reload" id="reloadForm" style="display: inline;">
+                <button type="button" class="btn btn-warning" onclick="confirmReload()">
+                    🔄 Reload All Data
+                </button>
+            </form>
+            <small class="text-muted ms-2">Reload posts, pages, and configuration from storage</small>
+        </div>
+
         <div class="row">
             <div class="col-md-6 col-lg-3">
                 <div class="card shadow-sm">
@@ -88,3 +114,11 @@
         </div>
     </div>
 </div>
+
+<script>
+function confirmReload() {
+    if (confirm('Are you sure you want to reload all data from storage? This will refresh all posts, pages, and configuration.')) {
+        document.getElementById('reloadForm').submit();
+    }
+}
+</script>

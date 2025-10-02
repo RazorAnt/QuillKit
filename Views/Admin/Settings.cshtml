@@ -1,0 +1,50 @@
+@model string
+
+@{
+    ViewData["Title"] = "Site Settings";
+}
+
+<div class="row">
+    <div class="col-lg-9">
+        <div class="mb-4">
+            <h1 class="h3">Site Settings</h1>
+            <p class="text-muted">Edit site configuration (YAML format)</p>
+            <hr />
+        </div>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+        {
+            <div class="alert alert-danger">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@error.ErrorMessage</div>
+                }
+            </div>
+        }
+
+        <form method="post" action="/admin/settings">
+            <div class="mb-3">
+                <label for="configContent" class="form-label">Configuration (YAML)</label>
+                <textarea class="form-control font-monospace" id="configContent" name="configContent" rows="30" style="font-size: 0.9rem;">@Model</textarea>
+                <div class="form-text">Edit the YAML configuration carefully. Invalid YAML will prevent the site from loading.</div>
+            </div>
+            
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">💾 Save Configuration</button>
+                <a href="/admin" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-lg-3">
+        <partial name="_AdminSidebar" />
+    </div>
+</div>

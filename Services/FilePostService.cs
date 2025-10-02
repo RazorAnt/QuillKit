@@ -5,7 +5,7 @@ namespace QuillKit.Services;
 /// <summary>
 /// 📚 In-memory cached post service with content service integration
 /// </summary>
-public class FilePostService : IPostService, IDisposable
+public class FilePostService : IPostService
 {
     private readonly string _contentPath;
     private readonly IContentService _contentService;
@@ -13,7 +13,6 @@ public class FilePostService : IPostService, IDisposable
     private readonly SiteConfigService _siteConfigService;
     private readonly ILogger<FilePostService> _logger;
     private readonly Dictionary<string, Post> _postCache;
-    private readonly FileSystemWatcher? _fileWatcher;
     private readonly object _cacheLock = new();
 
     public FilePostService(
@@ -33,31 +32,7 @@ public class FilePostService : IPostService, IDisposable
         // Load all posts into memory
         LoadAllPostsFromDiskAsync().GetAwaiter().GetResult();
 
-        // Set up file system watcher only for local storage
-        var contentProvider = configuration.GetValue<string>("ContentProvider", "Local");
-        if (contentProvider.ToLowerInvariant() is "local" or "file")
-        {
-            // Ensure content directory exists for local storage
-            if (!Directory.Exists(_contentPath))
-            {
-                Directory.CreateDirectory(_contentPath);
-                _logger.LogInformation("📁 Created content directory: {ContentPath}", _contentPath);
-            }
-
-            _fileWatcher = new FileSystemWatcher(_contentPath, "*.md")
-            {
-                NotifyFilter = NotifyFilters.CreationTime | NotifyFilters.LastWrite | NotifyFilters.FileName
-            };
-            _fileWatcher.Created += OnFileChanged;
-            _fileWatcher.Changed += OnFileChanged;
-            _fileWatcher.Deleted += OnFileDeleted;
-            _fileWatcher.Renamed += OnFileRenamed;
-            _fileWatcher.EnableRaisingEvents = true;
-        }
-
-        _logger.LogInformation("📖 Loaded {PostCount} posts into memory with file watching {Status}", 
-            _postCache.Count, 
-            _fileWatcher != null ? "enabled" : "disabled (blob storage)");
+        _logger.LogInformation(" Loaded {PostCount} posts into memory", _postCache.Count);
     }
 
     /// <summary>
@@ -100,69 +75,14 @@ public class FilePostService : IPostService, IDisposable
     }
 
     /// <summary>
-    /// 🔄 File change event handler
+    /// 🔄 Reload all posts from content service (manual refresh for both local and Azure storage)
     /// </summary>
-    private void OnFileChanged(object sender, FileSystemEventArgs e)
+    public async Task ReloadPostsAsync()
     {
-        _logger.LogInformation("📝 File changed: {FileName}", e.Name);
-        var relativePath = Path.GetFileName(e.Name ?? "");
-        ReloadSinglePostAsync(relativePath).GetAwaiter().GetResult();
-    }
-
-    /// <summary>
-    /// 🗑️ File deleted event handler
-    /// </summary>
-    private void OnFileDeleted(object sender, FileSystemEventArgs e)
-    {
-        _logger.LogInformation("🗑️ File deleted: {FileName}", e.Name);
-        var slug = Path.GetFileNameWithoutExtension(e.Name ?? "");
-        
-        lock (_cacheLock)
-        {
-            _postCache.Remove(slug);
-        }
-    }
-
-    /// <summary>
-    /// 🔄 File renamed event handler
-    /// </summary>
-    private void OnFileRenamed(object sender, RenamedEventArgs e)
-    {
-        _logger.LogInformation("📝 File renamed: {OldName} → {NewName}", e.OldName, e.Name);
-        
-        // Remove old entry
-        var oldSlug = Path.GetFileNameWithoutExtension(e.OldName ?? "");
-        lock (_cacheLock)
-        {
-            _postCache.Remove(oldSlug);
-        }
-        
-        // Add new entry
-        var relativePath = Path.GetFileName(e.Name ?? "");
-        ReloadSinglePostAsync(relativePath).GetAwaiter().GetResult();
-    }
-
-    /// <summary>
-    /// 🔄 Reloads a single post from content service
-    /// </summary>
-    private async Task ReloadSinglePostAsync(string relativePath)
-    {
-        try
-        {
-            var post = await _postParser.ParseMarkdownFileAsync(_contentService, relativePath, _siteConfigService.Config);
-            if (post != null)
-            {
-                lock (_cacheLock)
-                {
-                    _postCache[post.Slug] = post;
-                }
-                _logger.LogInformation("✅ Reloaded post: {Slug}", post.Slug);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "❌ Error reloading file: {RelativePath}", relativePath);
-        }
+        // 🔄 Reload all posts from content service
+        _logger.LogInformation("� Manually reloading all posts from content service...");
+        await LoadAllPostsFromDiskAsync();
+        _logger.LogInformation("✅ Reload complete: {PostCount} posts in cache", _postCache.Count);
     }
 
     /// <summary>
@@ -438,14 +358,5 @@ public class FilePostService : IPostService, IDisposable
             .Replace("/", "-")
             .Replace("\\", "-")
             .Replace("&", "and");
-    }
-
-    /// <summary>
-    /// 🧹 Dispose resources and stop file watching
-    /// </summary>
-    public void Dispose()
-    {
-        _fileWatcher?.Dispose();
-        _logger.LogInformation("📖 FilePostService disposed - file watching stopped");
     }
 }

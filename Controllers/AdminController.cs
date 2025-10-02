@@ -16,13 +16,15 @@ namespace QuillKit.Controllers;
 public class AdminController : Controller
 {
     private readonly IPostService _postService;
+    private readonly IContentService _contentService;
     private readonly ILogger<AdminController> _logger;
     private readonly SiteConfigService _siteConfigService;
     private readonly IConfiguration _configuration;
 
-    public AdminController(IPostService postService, ILogger<AdminController> logger, SiteConfigService siteConfigService, IConfiguration configuration)
+    public AdminController(IPostService postService, IContentService contentService, ILogger<AdminController> logger, SiteConfigService siteConfigService, IConfiguration configuration)
     {
         _postService = postService;
+        _contentService = contentService;
         _logger = logger;
         _siteConfigService = siteConfigService;
         _configuration = configuration;
@@ -120,7 +122,32 @@ public class AdminController : Controller
     }
 
     /// <summary>
-    /// 🚪 Logout the admin user and redirect to the home page
+    /// � Reload all posts and pages from storage
+    /// </summary>
+    [HttpPost]
+    [Route("admin/reload")]
+    public async Task<IActionResult> ReloadData()
+    {
+        // 🔄 Reload all posts and pages from content service
+        try
+        {
+            await _postService.ReloadPostsAsync();
+            await _siteConfigService.ReloadConfigAsync();
+            
+            _logger.LogInformation("✅ Data reloaded successfully from admin dashboard");
+            TempData["SuccessMessage"] = "All data reloaded successfully!";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Failed to reload data");
+            TempData["ErrorMessage"] = $"Failed to reload data: {ex.Message}";
+        }
+        
+        return RedirectToAction("Index");
+    }
+
+    /// <summary>
+    /// �🚪 Logout the admin user and redirect to the home page
     /// </summary>
     [HttpGet]
     [Route("admin/logout")]
@@ -286,7 +313,6 @@ public class AdminController : Controller
     [Route("admin/media")]
     public async Task<IActionResult> Media()
     {
-        // TODO: Implement media management interface
         var mediaFiles = await _postService.GetMediaFilesAsync();
         return View(mediaFiles);
     }
@@ -296,61 +322,265 @@ public class AdminController : Controller
     /// </summary>
     [HttpPost]
     [Route("admin/media/upload")]
-    public Task<IActionResult> UploadMedia(IFormFile file)
+    public async Task<IActionResult> UploadMedia(IFormFile file)
     {
-        // TODO: Implement file upload with validation and security
         if (file == null || file.Length == 0)
         {
-            return Task.FromResult<IActionResult>(BadRequest("No file selected"));
+            ModelState.AddModelError("", "No file selected");
+            return RedirectToAction("Media");
+        }
+
+        try
+        {
+            var fileName = Path.GetFileName(file.FileName);
+            var relativePath = $"media/{fileName}";
+            
+            // Check if file already exists
+            if (await _contentService.FileExistsAsync(relativePath))
+            {
+                ModelState.AddModelError("", $"File '{fileName}' already exists");
+                return RedirectToAction("Media");
+            }
+            
+            // Read file content into memory
+            using var memoryStream = new MemoryStream();
+            await file.CopyToAsync(memoryStream);
+            var fileBytes = memoryStream.ToArray();
+            
+            // For IContentService, we need to write the file
+            // Note: IContentService currently only has WriteFileAsync for text
+            // We need to handle binary files differently based on provider
+            var contentProvider = _configuration.GetValue<string>("ContentProvider", "Local");
+            
+            if (contentProvider == "AzureBlob")
+            {
+                // Upload directly to Azure Blob using BlobServiceClient
+                var connectionString = _configuration.GetConnectionString("AzureStorage");
+                var blobServiceClient = new Azure.Storage.Blobs.BlobServiceClient(connectionString);
+                var containerClient = blobServiceClient.GetBlobContainerClient("content");
+                await containerClient.CreateIfNotExistsAsync(Azure.Storage.Blobs.Models.PublicAccessType.None);
+                
+                var blobClient = containerClient.GetBlobClient(relativePath);
+                using var uploadStream = new MemoryStream(fileBytes);
+                await blobClient.UploadAsync(uploadStream, overwrite: false);
+            }
+            else
+            {
+                // Local file system
+                var mediaPath = Path.Combine(Directory.GetCurrentDirectory(), "Content", "media");
+                Directory.CreateDirectory(mediaPath);
+                var filePath = Path.Combine(mediaPath, fileName);
+                await System.IO.File.WriteAllBytesAsync(filePath, fileBytes);
+            }
+            
+            _logger.LogInformation("Media file uploaded: {FileName}", fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to upload media file: {FileName}", file.FileName);
+            ModelState.AddModelError("", $"Failed to upload file: {ex.Message}");
         }
         
-        // Placeholder for file upload logic
-        _logger.LogInformation("File upload attempted: {FileName}", file.FileName);
+        return RedirectToAction("Media");
+    }
+
+    /// <summary>
+    /// 🗑️ Delete media file
+    /// </summary>
+    [HttpPost]
+    [Route("admin/media/delete")]
+    public async Task<IActionResult> DeleteMedia(string fileName)
+    {
+        if (string.IsNullOrEmpty(fileName))
+        {
+            return BadRequest("No file specified");
+        }
+
+        try
+        {
+            var relativePath = $"media/{fileName}";
+            
+            // Check if file exists before trying to delete
+            if (await _contentService.FileExistsAsync(relativePath))
+            {
+                await _contentService.DeleteFileAsync(relativePath);
+                _logger.LogInformation("Media file deleted: {FileName}", fileName);
+            }
+            else
+            {
+                _logger.LogWarning("Media file not found for deletion: {FileName}", fileName);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete media file: {FileName}", fileName);
+            ModelState.AddModelError("", $"Failed to delete file: {ex.Message}");
+        }
         
-        return Task.FromResult<IActionResult>(RedirectToAction("Media"));
+        return RedirectToAction("Media");
     }
 
     /// <summary>
     /// ⚙️ Admin settings - blog configuration
     /// </summary>
     [Route("admin/settings")]
-    public IActionResult Settings()
+    public async Task<IActionResult> Settings()
     {
-        // TODO: Implement settings management
-        return View();
+        try
+        {
+            var configContent = await _contentService.ReadFileAsync("Config/site-config.yml");
+            return View((object)configContent);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load site-config.yml");
+            ModelState.AddModelError("", "Failed to load configuration file");
+            return View((object)string.Empty);
+        }
     }
 
     /// <summary>
-    /// 📦 Admin export - content backup feature
-    /// </summary>
-    [Route("admin/export")]
-    public async Task<IActionResult> Export()
-    {
-        // TODO: Implement content export/backup functionality
-        var allPosts = await _postService.GetAllPostsAsync();
-        
-        // Placeholder for export logic
-        _logger.LogInformation("Content export requested - {PostCount} posts", allPosts.Count);
-        
-        return View();
-    }
-
-    /// <summary>
-    /// 📥 Download backup file
+    /// 💾 Save settings configuration
     /// </summary>
     [HttpPost]
+    [Route("admin/settings")]
+    public async Task<IActionResult> SaveSettings(string configContent)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(configContent))
+            {
+                ModelState.AddModelError("", "Configuration content cannot be empty");
+                return View("Settings", (object)configContent);
+            }
+
+            await _contentService.WriteFileAsync("Config/site-config.yml", configContent);
+            
+            // Reload the site configuration
+            await _siteConfigService.ReloadConfigAsync();
+            
+            _logger.LogInformation("Site configuration saved and reloaded");
+            TempData["SuccessMessage"] = "Configuration saved successfully!";
+            
+            return RedirectToAction("Settings");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save site-config.yml");
+            ModelState.AddModelError("", $"Failed to save configuration: {ex.Message}");
+            return View("Settings", (object)configContent);
+        }
+    }
+
+    /// <summary>
+    /// 📦 Admin backup page
+    /// </summary>
     [Route("admin/backup")]
+    public IActionResult Backup()
+    {
+        // 📦 Display backup page with download button
+        return View();
+    }
+
+    /// <summary>
+    /// 📥 Download backup file - creates zip with all content
+    /// </summary>
+    [HttpPost]
+    [Route("admin/backup/download")]
     public async Task<IActionResult> DownloadBackup()
     {
-        // TODO: Generate and download backup file
-        // zip file should contain all md files, media and config folders.
-        var allPosts = await _postService.GetAllPostsAsync();
-        
-        // Placeholder - will need to create actual backup file
-        var backupContent = $"Backup generated on {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC\nTotal posts: {allPosts.Count}";
-        var bytes = System.Text.Encoding.UTF8.GetBytes(backupContent);
-        
-        return File(bytes, "application/zip", $"quillkit-backup-{DateTime.UtcNow:yyyyMMdd}.zip");
+        // 📦 Generate and download backup file in memory
+        try
+        {
+            _logger.LogInformation("📦 Generating backup...");
+            
+            using var memoryStream = new MemoryStream();
+            using (var archive = new System.IO.Compression.ZipArchive(memoryStream, System.IO.Compression.ZipArchiveMode.Create, true))
+            {
+                // Get all files from content service
+                var allFiles = await _contentService.ListFilesAsync("", "*.*");
+                
+                foreach (var file in allFiles)
+                {
+                    try
+                    {
+                        // Read file content
+                        var content = await _contentService.ReadFileAsync(file);
+                        
+                        // Add to zip with proper path structure
+                        var entry = archive.CreateEntry(file, System.IO.Compression.CompressionLevel.Optimal);
+                        using var entryStream = entry.Open();
+                        using var writer = new StreamWriter(entryStream);
+                        await writer.WriteAsync(content);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "⚠️ Could not backup file: {FileName}", file);
+                        // Continue with other files
+                    }
+                }
+                
+                // Add media files (binary files need special handling)
+                var mediaFiles = await _postService.GetMediaFilesAsync();
+                foreach (var mediaFile in mediaFiles)
+                {
+                    try
+                    {
+                        var relativePath = $"media/{mediaFile}";
+                        
+                        // For binary files, we need to read as bytes
+                        // We'll use a different approach based on provider
+                        var contentProvider = _configuration.GetValue<string>("ContentProvider", "Local");
+                        
+                        if (contentProvider == "AzureBlob")
+                        {
+                            var connectionString = _configuration.GetConnectionString("AzureStorage");
+                            var blobServiceClient = new Azure.Storage.Blobs.BlobServiceClient(connectionString);
+                            var containerClient = blobServiceClient.GetBlobContainerClient("content");
+                            var blobClient = containerClient.GetBlobClient(relativePath);
+                            
+                            if (await blobClient.ExistsAsync())
+                            {
+                                var entry = archive.CreateEntry(relativePath, System.IO.Compression.CompressionLevel.Optimal);
+                                using var entryStream = entry.Open();
+                                await blobClient.DownloadToAsync(entryStream);
+                            }
+                        }
+                        else
+                        {
+                            // Local file system
+                            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Content", "media", mediaFile);
+                            if (System.IO.File.Exists(filePath))
+                            {
+                                var entry = archive.CreateEntry(relativePath, System.IO.Compression.CompressionLevel.Optimal);
+                                using var entryStream = entry.Open();
+                                using var fileStream = System.IO.File.OpenRead(filePath);
+                                await fileStream.CopyToAsync(entryStream);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "⚠️ Could not backup media file: {FileName}", mediaFile);
+                        // Continue with other files
+                    }
+                }
+            }
+            
+            memoryStream.Position = 0;
+            var fileBytes = memoryStream.ToArray();
+            
+            var fileName = $"quillkit-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.zip";
+            _logger.LogInformation("✅ Backup generated: {FileName} ({Size} bytes)", fileName, fileBytes.Length);
+            
+            return File(fileBytes, "application/zip", fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Failed to generate backup");
+            TempData["ErrorMessage"] = $"Failed to generate backup: {ex.Message}";
+            return RedirectToAction("Backup");
+        }
     }
 
     // [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

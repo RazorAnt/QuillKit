@@ -18,4 +18,5 @@ public interface IPostService
     Task<List<string>> GetAllTagsAsync();
     Task<List<string>> GetAllAuthorsAsync();
     Task<List<string>> GetMediaFilesAsync();
+    Task ReloadPostsAsync();
 }

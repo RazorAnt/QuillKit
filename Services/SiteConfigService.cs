@@ -136,6 +136,16 @@ public class SiteConfigService
         }
     }
 
+    /// <summary>
+    /// 🔄 Reload site configuration from disk
+    /// </summary>
+    public async Task ReloadConfigAsync()
+    {
+        // 🔄 Re-read and re-parse the configuration file
+        await LoadConfigAsync();
+        _logger.LogInformation("🔄 Site configuration reloaded from {ConfigPath}", _configPath);
+    }
+
     private async Task CreateDefaultConfigAsync()
     {
         var defaultConfig = new SiteConfig

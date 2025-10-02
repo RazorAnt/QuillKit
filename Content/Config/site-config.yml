@@ -46,7 +46,7 @@ navigation:
 sidebar:
   show_author: true
   pinned_posts:
-    - "a-sample-markdown-post"
+    - "a-sample-post"
 
 # Content Settings
 markdown:
