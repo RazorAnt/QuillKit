@@ -195,6 +195,9 @@ public class AdminController : Controller
     [Route("admin/editor")]
     public async Task<IActionResult> SavePost(Post post)
     {
+        _logger.LogInformation("💾 SavePost called - Title: {Title}, Type: {Type}, Status: {Status}, FileName: {FileName}", 
+            post.Title, post.Type, post.Status, post.FileName);
+        
         // Parse additional form fields (CategoriesCsv, TagsCsv) as they aren't bound to complex types by default
         try
         {
@@ -219,10 +222,37 @@ public class AdminController : Controller
             _logger.LogWarning(ex, "Error parsing form fields for post save");
         }
 
+        // 🧹 Clean up placeholder values before validation
+        if (string.Equals(post.Link, "none", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogInformation("🧹 Cleaning up Link field: 'None' -> empty string");
+            post.Link = string.Empty;
+        }
+        
+        if (string.Equals(post.Image, "none", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogInformation("🧹 Cleaning up Image field: 'None' -> empty string");
+            post.Image = string.Empty;
+        }
+
         if (!ModelState.IsValid)
         {
+            _logger.LogWarning("❌ ModelState is invalid! Errors:");
+            foreach (var key in ModelState.Keys)
+            {
+                var errors = ModelState[key]?.Errors;
+                if (errors != null && errors.Count > 0)
+                {
+                    foreach (var error in errors)
+                    {
+                        _logger.LogWarning("  - {Key}: {Error}", key, error.ErrorMessage);
+                    }
+                }
+            }
             return View("Editor", post);
         }
+
+        _logger.LogInformation("✅ ModelState is valid, proceeding with save...");
 
         // Ensure FileName is preserved when editing an existing file
         if (!string.IsNullOrEmpty(Request.Form["FileName"]))
@@ -232,8 +262,9 @@ public class AdminController : Controller
 
         try
         {
+            _logger.LogInformation("📞 Calling SavePostAsync...");
             await _postService.SavePostAsync(post);
-            _logger.LogInformation("Post saved: {Title}", post.Title);
+            _logger.LogInformation("✅ Post saved: {Title}", post.Title);
         }
         catch (Exception ex)
         {
@@ -314,6 +345,11 @@ public class AdminController : Controller
     public async Task<IActionResult> Media()
     {
         var mediaFiles = await _postService.GetMediaFilesAsync();
+        _logger.LogInformation("📊 Controller received {Count} media files to pass to view", mediaFiles.Count);
+        foreach (var file in mediaFiles.Take(5))
+        {
+            _logger.LogInformation("  📁 Sample file in controller: {File}", file);
+        }
         return View(mediaFiles);
     }
 

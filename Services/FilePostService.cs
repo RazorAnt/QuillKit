@@ -205,6 +205,8 @@ public class FilePostService : IPostService
     /// </summary>
     public async Task<Post> SavePostAsync(Post post)
     {
+        _logger.LogInformation("💾 SavePostAsync started - Title: {Title}, FileName: {FileName}", post.Title, post.FileName);
+        
         // Ensure slug
         if (string.IsNullOrEmpty(post.Slug))
         {
@@ -213,34 +215,47 @@ public class FilePostService : IPostService
 
         // Determine target file name. If the post already has a FileName (editing existing file), prefer that.
         var targetFileName = !string.IsNullOrEmpty(post.FileName) ? post.FileName : $"{post.Slug}.md";
+        _logger.LogInformation("📝 Target file name: {FileName}", targetFileName);
 
         // If the slug doesn't match the FileName, ensure FileName's slug is in sync for cache keying
         var resultingSlug = Path.GetFileNameWithoutExtension(targetFileName);
         post.Slug = resultingSlug;
 
+        _logger.LogInformation("📝 Serializing to markdown...");
         var markdownContent = _postParser.SerializeToMarkdown(post);
 
+        _logger.LogInformation("📝 Writing file to content service: {FileName}", targetFileName);
         await _contentService.WriteFileAsync(targetFileName, markdownContent);
+        _logger.LogInformation("✅ File written successfully");
 
-        post.FileName = targetFileName;
-        post.LastModified = DateTime.UtcNow;
+        _logger.LogInformation("📖 Re-parsing the saved file: {FileName}", targetFileName);
+        // Re-parse the file to get the complete Post object with all metadata
+        var savedPost = await _postParser.ParseMarkdownFileAsync(_contentService, targetFileName, _siteConfigService.Config);
+        
+        if (savedPost == null)
+        {
+            _logger.LogError("❌ Failed to re-parse saved post: {FileName}", targetFileName);
+            throw new InvalidOperationException($"Failed to re-parse saved post: {targetFileName}");
+        }
+        _logger.LogInformation("✅ File re-parsed successfully");
 
+        _logger.LogInformation("🔄 Updating cache...");
         // Update cache immediately - remove any old entry for a previous slug if necessary
         lock (_cacheLock)
         {
             // Remove entries where FileName matched a different slug previously
-            var keysToRemove = _postCache.Keys.Where(k => string.Equals(_postCache[k].FileName, targetFileName, StringComparison.OrdinalIgnoreCase) && k != post.Slug).ToList();
+            var keysToRemove = _postCache.Keys.Where(k => string.Equals(_postCache[k].FileName, targetFileName, StringComparison.OrdinalIgnoreCase) && k != savedPost.Slug).ToList();
             foreach (var k in keysToRemove)
             {
                 _postCache.Remove(k);
             }
 
-            _postCache[post.Slug] = post;
+            _postCache[savedPost.Slug] = savedPost;
         }
 
-        _logger.LogInformation("💾 Saved post: {Title} to {FileName}", post.Title, targetFileName);
+        _logger.LogInformation("💾 Saved post: {Title} to {FileName}, updated cache with slug: {Slug}", savedPost.Title, targetFileName, savedPost.Slug);
 
-        return post;
+        return savedPost;
     }
 
     /// <summary>
@@ -325,13 +340,24 @@ public class FilePostService : IPostService
     {
         try
         {
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".mp4", ".webm" };
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".mp4", ".webm", ".pdf", ".zip" };
             
             var mediaFiles = await _contentService.ListFilesAsync("media", "*.*");
+            _logger.LogInformation("🖼️ Found {Count} files from ListFilesAsync('media', '*.*')", mediaFiles.Count());
             
-            return mediaFiles
-                .Where(f => allowedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+            foreach (var file in mediaFiles)
+            {
+                _logger.LogInformation("  - File: {File}", file);
+            }
+            
+            // Keep the relative path but remove the "media/" prefix (e.g., "media/2011/07/picture.jpg" -> "2011/07/picture.jpg")
+            var result = mediaFiles
+                .Where(f => !string.IsNullOrEmpty(f) && allowedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                .Select(f => f.StartsWith("media/") ? f.Substring(6) : f) // Remove "media/" prefix
                 .ToList();
+            
+            _logger.LogInformation("🖼️ Returning {Count} media files after filtering", result.Count);
+            return result;
         }
         catch (Exception ex)
         {

@@ -37,13 +37,13 @@
         </div>
 
         <!-- Media Files List -->
-        <div class="table-responsive">
+        <div>
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th>Actions</th>
-                        <th>File Name</th>
-                        <th>Preview</th>
+                        <th style="width: 200px;">Actions</th>
+                        <th style="width: auto;">File Name</th>
+                        <th style="width: 150px;">Preview</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -59,29 +59,30 @@
                     {
                         var fileName = System.IO.Path.GetFileName(file);
                         var fileExtension = System.IO.Path.GetExtension(file).ToLower();
-                        var relativePath = $"/media/{fileName}";
-                        var mediaUrl = $"{SiteConfigService.Config.BaseUrl}{relativePath}";
+                        var relativePath = $"/media/{file}"; // file now includes subdirectory structure
+                        var baseUrl = SiteConfigService.Config.BaseUrl?.TrimEnd('/') ?? "";
+                        var mediaUrl = string.IsNullOrEmpty(baseUrl) ? relativePath : $"{baseUrl}{relativePath}";
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center gap-2">
                                     <button class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('@mediaUrl', this)" title="Copy Link">
-                                        📋 Copy Link
+                                        Copy
                                     </button>
                                     <form method="post" action="/admin/media/delete" style="display:inline;" onsubmit="return confirm('Delete this media file?');">
-                                        <input type="hidden" name="fileName" value="@fileName" />
+                                        <input type="hidden" name="fileName" value="@file" />
                                         <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
-                                            🗑️ Delete
+                                            Delete
                                         </button>
                                     </form>
                                 </div>
                             </td>
-                            <td>
+                            <td style="word-break: break-word; white-space: normal;">
                                 <div>
-                                    <strong>@fileName</strong>
-                                    <div class="text-muted small">@mediaUrl</div>
+                                    <strong style="word-break: break-word;">@file</strong>
+                                    <div class="text-muted small" style="word-break: break-all;">@mediaUrl</div>
                                 </div>
                             </td>
-                            <td>
+                            <td style="text-align: center; vertical-align: middle;">
                                 @{
                                     var isImage = fileExtension == ".jpg" || fileExtension == ".jpeg" || fileExtension == ".png" || fileExtension == ".gif" || fileExtension == ".webp";
                                     var isVideo = fileExtension == ".mp4" || fileExtension == ".mov" || fileExtension == ".avi" || fileExtension == ".webm";

@@ -129,10 +129,37 @@ public class AzureBlobContentService : IContentService
             var blobs = new List<string>();
             await foreach (var blobItem in containerClient.GetBlobsAsync(prefix: prefix))
             {
-                // Simple pattern matching (only supports * wildcard)
-                if (searchPattern == "*" || blobItem.Name.EndsWith(searchPattern.Replace("*", "")))
+                // Simple pattern matching (supports * wildcard and *.ext patterns)
+                if (searchPattern == "*" || searchPattern == "*.*")
                 {
+                    // Match all files
                     blobs.Add(blobItem.Name);
+                }
+                else if (searchPattern.StartsWith("*."))
+                {
+                    // Match specific extension (e.g., *.md)
+                    var extension = searchPattern.Substring(1); // Remove the *
+                    if (blobItem.Name.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+                    {
+                        blobs.Add(blobItem.Name);
+                    }
+                }
+                else if (searchPattern.EndsWith("*"))
+                {
+                    // Match prefix (e.g., test*)
+                    var namePrefix = searchPattern.Substring(0, searchPattern.Length - 1);
+                    if (blobItem.Name.StartsWith(namePrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        blobs.Add(blobItem.Name);
+                    }
+                }
+                else
+                {
+                    // Exact match
+                    if (blobItem.Name.Equals(searchPattern, StringComparison.OrdinalIgnoreCase))
+                    {
+                        blobs.Add(blobItem.Name);
+                    }
                 }
             }
 

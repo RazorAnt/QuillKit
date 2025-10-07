@@ -11,6 +11,28 @@
             <hr />
         </div>
 
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <h5 class="alert-heading">⚠️ Validation Errors</h5>
+                <p>Please fix the following errors before saving:</p>
+                <ul class="mb-0">
+                    @foreach (var key in ViewData.ModelState.Keys)
+                    {
+                        var errors = ViewData.ModelState[key]?.Errors;
+                        if (errors != null && errors.Count > 0)
+                        {
+                            foreach (var error in errors)
+                            {
+                                <li><strong>@key:</strong> @error.ErrorMessage</li>
+                            }
+                        }
+                    }
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
         <form method="post" action="/admin/editor">
             <input type="hidden" name="FileName" value="@Model?.FileName" />
 
