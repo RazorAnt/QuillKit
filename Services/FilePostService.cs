@@ -99,30 +99,44 @@ public class FilePostService : IPostService
     /// <summary>
     /// 📰 Gets published posts with pagination from memory cache
     /// </summary>
-    public Task<List<Post>> GetPublishedPostsAsync(int page = 1, int pageSize = 5)
+    public Task<List<Post>> GetPublishedPostsAsync(int page = 1, int pageSize = 5, bool includeDrafts = false)
     {
         lock (_cacheLock)
         {
-            var publishedPosts = _postCache.Values
-                .Where(p => p.Status == PostStatus.Published && p.Type == PostType.Post)
+            var query = _postCache.Values.Where(p => p.Type == PostType.Post);
+            
+            // 🔐 Include drafts only if explicitly requested (for admin preview)
+            if (!includeDrafts)
+            {
+                query = query.Where(p => p.Status == PostStatus.Published);
+            }
+            
+            var posts = query
                 .OrderByDescending(p => p.PubDate)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToList();
             
-            return Task.FromResult(publishedPosts);
+            return Task.FromResult(posts);
         }
     }
 
     /// <summary>
     /// 📊 Gets the total count of published posts
     /// </summary>
-    public Task<int> GetPublishedPostsCountAsync()
+    public Task<int> GetPublishedPostsCountAsync(bool includeDrafts = false)
     {
         lock (_cacheLock)
         {
-            var count = _postCache.Values
-                .Count(p => p.Status == PostStatus.Published && p.Type == PostType.Post);
+            var query = _postCache.Values.Where(p => p.Type == PostType.Post);
+            
+            // 🔐 Include drafts only if explicitly requested (for admin preview)
+            if (!includeDrafts)
+            {
+                query = query.Where(p => p.Status == PostStatus.Published);
+            }
+            
+            var count = query.Count();
             
             return Task.FromResult(count);
         }
@@ -131,11 +145,18 @@ public class FilePostService : IPostService
     /// <summary>
     /// 🔍 Gets a post by its slug from memory cache
     /// </summary>
-    public Task<Post?> GetPostBySlugAsync(string slug)
+    public Task<Post?> GetPostBySlugAsync(string slug, bool includeDrafts = false)
     {
         lock (_cacheLock)
         {
             _postCache.TryGetValue(slug, out var post);
+            
+            // 🔐 Filter out drafts unless explicitly requested (for admin preview)
+            if (post != null && !includeDrafts && post.Status == PostStatus.Draft)
+            {
+                return Task.FromResult<Post?>(null);
+            }
+            
             return Task.FromResult(post);
         }
     }

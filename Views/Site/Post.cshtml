@@ -18,6 +18,10 @@
                 <div class="post-meta mb-4">
                     <div class="d-flex flex-wrap align-items-center text-muted">
                         <span class="me-3">
+                            @if (Model.Status == PostStatus.Draft)
+                            {
+                                <span class="badge bg-warning text-dark me-2">DRAFT</span>
+                            }
                             <i class="bi bi-calendar3"></i>
                             @Model.PubDate.ToString("MMMM dd, yyyy")
                         </span>

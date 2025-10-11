@@ -45,6 +45,10 @@
                                 </h4>
                                 
                                 <div class="post-meta mb-2">
+                                    @if (post.Status == PostStatus.Draft)
+                                    {
+                                        <span class="badge bg-warning text-dark me-2">DRAFT</span>
+                                    }
                                     <i class="bi bi-calendar3"></i>@post.PubDate.ToString("MMM dd, yyyy")
                                 </div>
                                 

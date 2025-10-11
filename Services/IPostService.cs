@@ -5,9 +5,9 @@ namespace QuillKit.Services;
 public interface IPostService
 {
     Task<List<Post>> GetAllPostsAsync();
-    Task<List<Post>> GetPublishedPostsAsync(int page = 1, int pageSize = 5);
-    Task<int> GetPublishedPostsCountAsync();
-    Task<Post?> GetPostBySlugAsync(string slug);
+    Task<List<Post>> GetPublishedPostsAsync(int page = 1, int pageSize = 5, bool includeDrafts = false);
+    Task<int> GetPublishedPostsCountAsync(bool includeDrafts = false);
+    Task<Post?> GetPostBySlugAsync(string slug, bool includeDrafts = false);
     Task<Post?> GetPostByFileNameAsync(string fileName);
     Task<List<Post>> GetPostsByCategoryAsync(string category);
     Task<List<Post>> GetPostsByTagAsync(string tag);

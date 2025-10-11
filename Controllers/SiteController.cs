@@ -31,10 +31,13 @@ public class SiteController : Controller
     public async Task<IActionResult> Index(int page = 1)
     {
         var pageSize = _siteConfigService.Config.PostsPerPage;
+        
+        // 🔐 Check if user is authenticated to show drafts
+        var isAdmin = HttpContext.Session.GetString("IsAdmin") == "true";
 
-        // Get paginated posts and total count
-        var posts = await _postService.GetPublishedPostsAsync(page, pageSize);
-        var totalPosts = await _postService.GetPublishedPostsCountAsync();
+        // Get paginated posts and total count (include drafts if admin)
+        var posts = await _postService.GetPublishedPostsAsync(page, pageSize, includeDrafts: isAdmin);
+        var totalPosts = await _postService.GetPublishedPostsCountAsync(includeDrafts: isAdmin);
         var totalPages = (int)Math.Ceiling((double)totalPosts / pageSize);
 
         // Create paginated view model
@@ -56,7 +59,9 @@ public class SiteController : Controller
             return NotFound();
         }
 
-        var post = await _postService.GetPostBySlugAsync(slug);
+        // 🔐 Check if user is authenticated to show drafts
+        var isAdmin = HttpContext.Session.GetString("IsAdmin") == "true";
+        var post = await _postService.GetPostBySlugAsync(slug, includeDrafts: isAdmin);
 
         if (post == null)
         {
@@ -64,9 +69,17 @@ public class SiteController : Controller
             return NotFound();
         }
 
-        if (post.Status != PostStatus.Published || post.Type != PostType.Post)
+        // Allow viewing drafts only if admin, otherwise must be published
+        if (!isAdmin && (post.Status != PostStatus.Published || post.Type != PostType.Post))
         {
             _logger.LogWarning("Attempted to access unpublished post: {Slug}", slug);
+            return NotFound();
+        }
+        
+        // Ensure it's actually a post type
+        if (post.Type != PostType.Post)
+        {
+            _logger.LogWarning("Attempted to access non-post content as post: {Slug}", slug);
             return NotFound();
         }
 
@@ -158,11 +171,21 @@ public class SiteController : Controller
         }
 
         var pageSize = _siteConfigService.Config.PostsPerPage;
+        
+        // 🔐 Check if user is authenticated to show drafts
+        var isAdmin = HttpContext.Session.GetString("IsAdmin") == "true";
 
         // Get all posts and filter by tag
         var allPosts = await _postService.GetAllPostsAsync();
-        var tagPosts = allPosts
-            .Where(p => p.Status == PostStatus.Published && p.Type == PostType.Post)
+        var query = allPosts.Where(p => p.Type == PostType.Post);
+        
+        // Include drafts only if admin
+        if (!isAdmin)
+        {
+            query = query.Where(p => p.Status == PostStatus.Published);
+        }
+        
+        var tagPosts = query
             .Where(p => p.Tags.Any(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase)))
             .OrderByDescending(p => p.PubDate)
             .ToList();
