@@ -55,6 +55,7 @@ builder.Services.AddSingleton<PostParser>();
 builder.Services.AddSingleton<SiteConfigService>();
 builder.Services.AddSingleton<SyndicationService>();
 builder.Services.AddSingleton<SitemapService>();
+builder.Services.AddSingleton<RobotsService>();
 
 // 🎨 Configure view location expander now that services are registered
 builder.Services.PostConfigure<RazorViewEngineOptions>(options =>

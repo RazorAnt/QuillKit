@@ -12,14 +12,16 @@ public class SiteController : Controller
     private readonly SiteConfigService _siteConfigService;
     private readonly SyndicationService _syndicationService;
     private readonly SitemapService _sitemapService;
+    private readonly RobotsService _robotsService;
     private readonly ILogger<SiteController> _logger;
 
-    public SiteController(IPostService postService, SiteConfigService siteConfigService, SyndicationService syndicationService, SitemapService sitemapService, ILogger<SiteController> logger)
+    public SiteController(IPostService postService, SiteConfigService siteConfigService, SyndicationService syndicationService, SitemapService sitemapService, RobotsService robotsService, ILogger<SiteController> logger)
     {
         _postService = postService;
         _siteConfigService = siteConfigService;
         _syndicationService = syndicationService;
         _sitemapService = sitemapService;
+        _robotsService = robotsService;
         _logger = logger;
     }
 
@@ -242,6 +244,20 @@ public class SiteController : Controller
         Response.Headers["Cache-Control"] = "public, max-age=86400"; // Cache for 24 hours
 
         return Content(sitemapXml, "application/xml");
+    }
+
+    /// <summary>
+    /// 🤖 Dynamic robots.txt endpoint
+    /// </summary>
+    [Route("robots.txt")]
+    public IActionResult Robots()
+    {
+        var robotsTxt = _robotsService.GenerateRobotsTxt();
+
+        Response.ContentType = "text/plain; charset=utf-8";
+        Response.Headers["Cache-Control"] = "public, max-age=86400"; // Cache for 24 hours
+
+        return Content(robotsTxt, "text/plain");
     }
 
     /// <summary>
