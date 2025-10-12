@@ -149,6 +149,49 @@ public class AdminController : Controller
     }
 
     /// <summary>
+    /// 📤 Upload a markdown post/page file
+    /// </summary>
+    [HttpPost]
+    [Route("admin/upload")]
+    public async Task<IActionResult> UploadPost(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            TempData["ErrorMessage"] = "Please select a file to upload.";
+            return RedirectToAction("Index");
+        }
+
+        if (!file.FileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["ErrorMessage"] = "Only markdown (.md) files are allowed.";
+            return RedirectToAction("Index");
+        }
+
+        try
+        {
+            // Read file content
+            string content;
+            using (var reader = new StreamReader(file.OpenReadStream()))
+            {
+                content = await reader.ReadToEndAsync();
+            }
+
+            // Save using the raw file save method which will auto-reload
+            await _postService.SaveRawFileAsync(file.FileName, content);
+
+            _logger.LogInformation("📤 File uploaded successfully: {FileName}", file.FileName);
+            TempData["SuccessMessage"] = $"File '{file.FileName}' uploaded successfully!";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Failed to upload file: {FileName}", file.FileName);
+            TempData["ErrorMessage"] = $"Failed to upload file: {ex.Message}";
+        }
+
+        return RedirectToAction("Index");
+    }
+
+    /// <summary>
     /// �🚪 Logout the admin user and redirect to the home page
     /// </summary>
     [HttpGet]

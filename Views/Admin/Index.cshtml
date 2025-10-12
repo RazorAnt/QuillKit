@@ -50,6 +50,17 @@
             <small class="text-muted ms-2">Reload posts, pages, and configuration from storage</small>
         </div>
 
+        <!-- Upload Post -->
+        <div class="mb-4">
+            <form method="post" action="/admin/upload" enctype="multipart/form-data" id="uploadForm" class="d-inline-flex align-items-center">
+                <input type="file" name="file" id="fileInput" accept=".md" class="form-control form-control-sm me-2" style="width: auto; max-width: 300px;" required />
+                <button type="submit" class="btn btn-primary btn-sm">
+                    📤 Upload Post
+                </button>
+            </form>
+            <small class="text-muted ms-2">Upload a markdown (.md) file</small>
+        </div>
+
         <div class="row">
             <div class="col-md-6 col-lg-3">
                 <div class="card shadow-sm">
