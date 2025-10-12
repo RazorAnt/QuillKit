@@ -19,10 +19,33 @@ public class PostMetadata
     public string? Excerpt { get; set; }
 
     /// <summary>
-    /// 🔄 Converts metadata to Post model
+    /// 🔄 Converts metadata to Post model with validation
     /// </summary>
-    public Post ToPost(string content, string fileName, SiteConfig? siteConfig = null)
+    /// <returns>Post object if valid, null if required fields are missing</returns>
+    public Post? ToPost(string content, string fileName, out string? validationError, SiteConfig? siteConfig = null)
     {
+        validationError = null;
+        
+        // ✅ Validate required fields
+        if (string.IsNullOrWhiteSpace(Title))
+        {
+            validationError = "Missing required field: title";
+            return null;
+        }
+        
+        if (string.IsNullOrWhiteSpace(Slug))
+        {
+            validationError = "Missing required field: slug";
+            return null;
+        }
+        
+        // Validate date - if it's exactly DateTime.UtcNow default, it wasn't set
+        if (Date == default(DateTime))
+        {
+            validationError = "Missing required field: date";
+            return null;
+        }
+        
         // Handle timezone conversion for dates
         var pubDate = Date;
         if (siteConfig != null && Date.Kind == DateTimeKind.Unspecified)
@@ -31,11 +54,16 @@ public class PostMetadata
             var timeZone = siteConfig.GetTimeZone();
             pubDate = TimeZoneInfo.ConvertTimeToUtc(Date, timeZone);
         }
+        
+        // Use site config author as default if not specified
+        var author = !string.IsNullOrWhiteSpace(Author) 
+            ? Author 
+            : siteConfig?.Author?.Name ?? "Unknown";
 
         var post = new Post
         {
             Title = Title,
-            Author = Author,
+            Author = author,
             Type = Enum.TryParse<PostType>(Type, true, out var postType) ? postType : PostType.Post,
             PubDate = pubDate,
             Categories = Categories ?? new List<string>(),

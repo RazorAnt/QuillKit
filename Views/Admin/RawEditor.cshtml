@@ -1,0 +1,56 @@
+@model string
+
+@{
+    ViewData["Title"] = "Raw File Editor";
+    var fileName = ViewData["FileName"] as string ?? "";
+}
+
+<div class="row">
+    <div class="col-lg-9">
+        <div class="mb-4">
+            <h1 class="h3">Raw File Editor</h1>
+            <p class="text-muted">Edit file: <code>@fileName</code></p>
+            <hr />
+        </div>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+        {
+            <div class="alert alert-danger">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@error.ErrorMessage</div>
+                }
+            </div>
+        }
+
+        <form method="post" action="/admin/raw-editor">
+            <input type="hidden" name="fileName" value="@fileName" />
+            
+            <div class="mb-3">
+                <label for="fileContent" class="form-label">File Content (Markdown with YAML frontmatter)</label>
+                <textarea class="form-control font-monospace" id="fileContent" name="fileContent" rows="30" style="font-size: 0.9rem;">@Model</textarea>
+                <div class="form-text">
+                    <strong>Required fields:</strong> title, date, slug<br/>
+                    Edit the file content carefully. Make sure YAML frontmatter is valid and required fields are present.
+                </div>
+            </div>
+            
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">💾 Save File</button>
+                <a href="/admin" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-lg-3">
+        <partial name="_AdminSidebar" />
+    </div>
+</div>

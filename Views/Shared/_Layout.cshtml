@@ -133,7 +133,10 @@
                     <div class="col-md-6 text-md-end">
                         <p class="mb-0 small text-light opacity-75">
                             Published with <a href="https://github.com/RazorAnt/QuillKit" class="text-warning text-decoration-none">QuillKit</a> 
-                            / <a href="/admin" class="text-warning text-decoration-none">Sign in</a>
+                            @{
+                                var isAdmin = Context.Session.GetString("IsAdmin") == "true";
+                            }
+                            / <a href="/admin" class="text-warning text-decoration-none">@(isAdmin ? "Admin" : "Sign in")</a>
                         </p>
                     </div>
                 </div>

@@ -102,6 +102,7 @@ public class AdminController : Controller
     {
         // TODO: Implement admin dashboard with overview stats
         var allPosts = await _postService.GetAllPostsAsync();
+        var parseErrors = await _postService.GetParseErrorsAsync();
 
         var publishedPosts = allPosts.Count(p => p.Type == PostType.Post && p.Status == PostStatus.Published);
         var draftPosts = allPosts.Count(p => p.Type == PostType.Post && p.Status == PostStatus.Draft);
@@ -113,6 +114,7 @@ public class AdminController : Controller
         ViewData["DraftPosts"] = draftPosts;
         ViewData["PublishedPages"] = publishedPages;
         ViewData["DraftPages"] = draftPages;
+        ViewData["ParseErrors"] = parseErrors;
 
         // Expose ContentProvider and BaseUrl
         ViewData["ContentProvider"] = _configuration.GetValue<string>("ContentProvider", "Local");
@@ -509,7 +511,78 @@ public class AdminController : Controller
     }
 
     /// <summary>
-    /// 📦 Admin backup page
+    /// � Raw file editor - load file content
+    /// </summary>
+    [Route("admin/raw-editor")]
+    public async Task<IActionResult> RawEditor(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            TempData["ErrorMessage"] = "File name is required";
+            return RedirectToAction("Index");
+        }
+
+        try
+        {
+            var content = await _postService.GetRawFileContentAsync(fileName);
+            
+            if (content == null)
+            {
+                TempData["ErrorMessage"] = $"File not found: {fileName}";
+                return RedirectToAction("Index");
+            }
+
+            ViewData["FileName"] = fileName;
+            return View((object)content);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load file for raw editing: {FileName}", fileName);
+            TempData["ErrorMessage"] = $"Failed to load file: {ex.Message}";
+            return RedirectToAction("Index");
+        }
+    }
+
+    /// <summary>
+    /// 💾 Save raw file content
+    /// </summary>
+    [HttpPost]
+    [Route("admin/raw-editor")]
+    public async Task<IActionResult> SaveRawFile(string fileName, string fileContent)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            TempData["ErrorMessage"] = "File name is required";
+            return RedirectToAction("Index");
+        }
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(fileContent))
+            {
+                ModelState.AddModelError("", "File content cannot be empty");
+                ViewData["FileName"] = fileName;
+                return View("RawEditor", (object)fileContent);
+            }
+
+            await _postService.SaveRawFileAsync(fileName, fileContent);
+            
+            _logger.LogInformation("Raw file saved and posts reloaded: {FileName}", fileName);
+            TempData["SuccessMessage"] = $"File '{fileName}' saved successfully!";
+            
+            return RedirectToAction("Index");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save raw file: {FileName}", fileName);
+            ModelState.AddModelError("", $"Failed to save file: {ex.Message}");
+            ViewData["FileName"] = fileName;
+            return View("RawEditor", (object)fileContent);
+        }
+    }
+
+    /// <summary>
+    /// �📦 Admin backup page
     /// </summary>
     [Route("admin/backup")]
     public IActionResult Backup()

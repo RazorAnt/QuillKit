@@ -13,6 +13,7 @@ public class FilePostService : IPostService
     private readonly SiteConfigService _siteConfigService;
     private readonly ILogger<FilePostService> _logger;
     private readonly Dictionary<string, Post> _postCache;
+    private readonly Dictionary<string, string> _parseErrors;
     private readonly object _cacheLock = new();
 
     public FilePostService(
@@ -28,6 +29,7 @@ public class FilePostService : IPostService
         _siteConfigService = siteConfigService;
         _logger = logger;
         _postCache = new Dictionary<string, Post>(StringComparer.OrdinalIgnoreCase);
+        _parseErrors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         // Load all posts into memory
         LoadAllPostsFromDiskAsync().GetAwaiter().GetResult();
@@ -53,17 +55,29 @@ public class FilePostService : IPostService
             {
                 try
                 {
-                    var post = await _postParser.ParseMarkdownFileAsync(_contentService, file, _siteConfigService.Config);
-                    if (post != null)
+                    var result = await _postParser.ParseMarkdownFileAsync(_contentService, file, _siteConfigService.Config);
+                    
+                    lock (_cacheLock)
                     {
-                        lock (_cacheLock)
+                        if (result.Success && result.Post != null)
                         {
-                            _postCache[post.Slug] = post;
+                            _postCache[result.Post.Slug] = result.Post;
+                            // Remove error if file was previously failing but now parses
+                            _parseErrors.Remove(file);
+                        }
+                        else if (!string.IsNullOrEmpty(result.Error))
+                        {
+                            _parseErrors[file] = result.Error;
+                            _logger.LogWarning("⚠️ Failed to parse {FileName}: {Error}", file, result.Error);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
+                    lock (_cacheLock)
+                    {
+                        _parseErrors[file] = ex.Message;
+                    }
                     _logger.LogError(ex, "❌ Error loading file into cache: {FileName}", file);
                 }
             }
@@ -251,14 +265,16 @@ public class FilePostService : IPostService
 
         _logger.LogInformation("📖 Re-parsing the saved file: {FileName}", targetFileName);
         // Re-parse the file to get the complete Post object with all metadata
-        var savedPost = await _postParser.ParseMarkdownFileAsync(_contentService, targetFileName, _siteConfigService.Config);
+        var parseResult = await _postParser.ParseMarkdownFileAsync(_contentService, targetFileName, _siteConfigService.Config);
         
-        if (savedPost == null)
+        if (!parseResult.Success || parseResult.Post == null)
         {
-            _logger.LogError("❌ Failed to re-parse saved post: {FileName}", targetFileName);
-            throw new InvalidOperationException($"Failed to re-parse saved post: {targetFileName}");
+            _logger.LogError("❌ Failed to re-parse saved post: {FileName}. Error: {Error}", targetFileName, parseResult.Error);
+            throw new InvalidOperationException($"Failed to re-parse saved post: {targetFileName}. Error: {parseResult.Error}");
         }
         _logger.LogInformation("✅ File re-parsed successfully");
+
+        var savedPost = parseResult.Post;
 
         _logger.LogInformation("🔄 Updating cache...");
         // Update cache immediately - remove any old entry for a previous slug if necessary
@@ -272,6 +288,9 @@ public class FilePostService : IPostService
             }
 
             _postCache[savedPost.Slug] = savedPost;
+            
+            // Remove any parse error for this file since it saved successfully
+            _parseErrors.Remove(targetFileName);
         }
 
         _logger.LogInformation("💾 Saved post: {Title} to {FileName}, updated cache with slug: {Slug}", savedPost.Title, targetFileName, savedPost.Slug);
@@ -405,5 +424,59 @@ public class FilePostService : IPostService
             .Replace("/", "-")
             .Replace("\\", "-")
             .Replace("&", "and");
+    }
+
+    /// <summary>
+    /// 🚨 Gets the list of parse errors for files that couldn't be loaded
+    /// </summary>
+    public Task<Dictionary<string, string>> GetParseErrorsAsync()
+    {
+        lock (_cacheLock)
+        {
+            return Task.FromResult(new Dictionary<string, string>(_parseErrors));
+        }
+    }
+
+    /// <summary>
+    /// 📄 Gets raw file content without parsing or validation
+    /// </summary>
+    public async Task<string?> GetRawFileContentAsync(string fileName)
+    {
+        try
+        {
+            if (!await _contentService.FileExistsAsync(fileName))
+            {
+                return null;
+            }
+
+            return await _contentService.ReadFileAsync(fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error reading raw file: {FileName}", fileName);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 💾 Saves raw file content and reloads the post cache
+    /// </summary>
+    public async Task SaveRawFileAsync(string fileName, string content)
+    {
+        try
+        {
+            _logger.LogInformation("📝 Writing raw file: {FileName}", fileName);
+            await _contentService.WriteFileAsync(fileName, content);
+            _logger.LogInformation("✅ Raw file saved successfully");
+
+            // Reload all posts to update cache and clear any parse errors
+            await LoadAllPostsFromDiskAsync();
+            _logger.LogInformation("🔄 Posts reloaded after raw file save");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error saving raw file: {FileName}", fileName);
+            throw;
+        }
     }
 }

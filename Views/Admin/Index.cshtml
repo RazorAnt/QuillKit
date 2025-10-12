@@ -9,6 +9,7 @@
     var draftPosts = ViewData["DraftPosts"] as int? ?? 0;
     var publishedPages = ViewData["PublishedPages"] as int? ?? 0;
     var draftPages = ViewData["DraftPages"] as int? ?? 0;
+    var parseErrors = ViewData["ParseErrors"] as Dictionary<string, string> ?? new Dictionary<string, string>();
     var contentProvider = ViewData["ContentProvider"] as string ?? "Local";
     var baseUrl = ViewData["BaseUrl"] as string ?? "/";
 }
@@ -84,6 +85,24 @@
                     </div>
                 </div>
             </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card shadow-sm @(parseErrors.Count > 0 ? "border-danger" : "")">
+                    <div class="card-body">
+                        <h6 class="card-title">Parse Errors @if (parseErrors.Count > 0) { <span class="badge bg-danger">@parseErrors.Count</span> }</h6>
+                        <div class="fs-4 fw-bold @(parseErrors.Count > 0 ? "text-danger" : "text-success")">
+                            @if (parseErrors.Count > 0)
+                            {
+                                <span>@parseErrors.Count</span>
+                            }
+                            else
+                            {
+                                <span>✓ None</span>
+                            }
+                        </div>
+                        <div class="text-muted small">Files with errors</div>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="row mt-4">
             <div class="col-md-6 col-lg-3">
@@ -104,6 +123,32 @@
                 </div>
             </div>
         </div>
+
+        @if (parseErrors.Count > 0)
+        {
+            <div class="mt-4">
+                <h4 class="h5 mb-3">🚨 Parse Errors</h4>
+                <div class="alert alert-danger">
+                    <p class="mb-2"><strong>The following files could not be parsed:</strong></p>
+                    <ul class="list-unstyled mb-0">
+                        @foreach (var error in parseErrors)
+                        {
+                            <li class="mb-3 p-2 bg-white rounded">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <strong>@error.Key</strong><br/>
+                                        <span class="text-muted small">@error.Value</span>
+                                    </div>
+                                    <a href="/admin/raw-editor?fileName=@System.Web.HttpUtility.UrlEncode(error.Key)" class="btn btn-sm btn-primary ms-2">
+                                        📝 Edit
+                                    </a>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        }
 
     </div>
 

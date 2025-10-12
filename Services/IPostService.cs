@@ -19,4 +19,7 @@ public interface IPostService
     Task<List<string>> GetAllAuthorsAsync();
     Task<List<string>> GetMediaFilesAsync();
     Task ReloadPostsAsync();
+    Task<Dictionary<string, string>> GetParseErrorsAsync();
+    Task<string?> GetRawFileContentAsync(string fileName);
+    Task SaveRawFileAsync(string fileName, string content);
 }

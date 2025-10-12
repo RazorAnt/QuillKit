@@ -6,6 +6,16 @@ using System.Text.RegularExpressions;
 namespace QuillKit.Services;
 
 /// <summary>
+/// 📊 Result of parsing a post with potential error information
+/// </summary>
+public class PostParseResult
+{
+    public Post? Post { get; set; }
+    public string? Error { get; set; }
+    public bool Success => Post != null && string.IsNullOrEmpty(Error);
+}
+
+/// <summary>
 /// 📖 Parses markdown files with YAML front matter into Post objects
 /// </summary>
 public class PostParser
@@ -26,38 +36,54 @@ public class PostParser
     /// <summary>
     /// 🔍 Parses a markdown file with YAML front matter
     /// </summary>
-    public Post? ParseMarkdownFile(string filePath, SiteConfig? siteConfig = null)
+    public Post? ParseMarkdownFile(string filePath, out string? parseError, SiteConfig? siteConfig = null)
     {
+        parseError = null;
+        
         if (!File.Exists(filePath))
+        {
+            parseError = "File not found";
             return null;
+        }
 
         var content = File.ReadAllText(filePath);
-        return ParseMarkdownContent(content, filePath, siteConfig);
+        return ParseMarkdownContent(content, filePath, out parseError, siteConfig);
     }
 
     /// <summary>
     /// 🔍 Parses a markdown file with YAML front matter using content service
     /// </summary>
-    public async Task<Post?> ParseMarkdownFileAsync(IContentService contentService, string relativePath, SiteConfig? siteConfig = null)
+    public async Task<PostParseResult> ParseMarkdownFileAsync(IContentService contentService, string relativePath, SiteConfig? siteConfig = null)
     {
+        // Check if file exists in the content service
         if (!await contentService.FileExistsAsync(relativePath))
-            return null;
+        {
+            return new PostParseResult { Error = $"File not found: {relativePath}" };
+        }
 
-        var content = await contentService.ReadFileAsync(relativePath);
-        return ParseMarkdownContent(content, relativePath, siteConfig);
+        var markdown = await contentService.ReadFileAsync(relativePath);
+        var post = ParseMarkdownContent(markdown, relativePath, out var parseError, siteConfig);
+        
+        return new PostParseResult 
+        { 
+            Post = post, 
+            Error = parseError 
+        };
     }
 
     /// <summary>
     /// 📝 Parses markdown content with YAML front matter
     /// </summary>
-    public Post? ParseMarkdownContent(string content, string fileName, SiteConfig? siteConfig = null)
+    public Post? ParseMarkdownContent(string content, string fileName, out string? parseError, SiteConfig? siteConfig = null)
     {
+        parseError = null;
         var match = FrontMatterRegex.Match(content);
         
         if (!match.Success)
         {
-            // No front matter found - create a basic post
-            return CreateBasicPost(content, fileName);
+            // ❌ No front matter found - this is now an error
+            parseError = "No YAML front matter found";
+            return null;
         }
 
         var yamlContent = match.Groups[1].Value;
@@ -66,13 +92,22 @@ public class PostParser
         try
         {
             var metadata = _yamlDeserializer.Deserialize<PostMetadata>(yamlContent);
-            return metadata.ToPost(markdownContent, fileName, siteConfig);
+            var post = metadata.ToPost(markdownContent, fileName, out string? validationError, siteConfig);
+            
+            if (post == null)
+            {
+                // Validation failed
+                parseError = validationError ?? "Unknown validation error";
+                return null;
+            }
+            
+            return post;
         }
         catch (Exception ex)
         {
-            // Log the error and return a basic post
-            Console.WriteLine($"Error parsing YAML front matter in {fileName}: {ex.Message}");
-            return CreateBasicPost(content, fileName);
+            // ❌ YAML parsing failed
+            parseError = $"YAML parse error: {ex.Message}";
+            return null;
         }
     }
 
