@@ -53,6 +53,7 @@ public class AdminController : Controller
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json")
             .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true)
+            .AddEnvironmentVariables()
             .Build();
         var adminSection = config.GetSection("AdminAuth");
         var storedUsername = adminSection["Username"];
