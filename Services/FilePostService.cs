@@ -236,7 +236,38 @@ public class FilePostService : IPostService
     }
 
     /// <summary>
-    /// 💾 Saves a post to the file system and updates cache
+    /// � Searches posts and pages by term (title, content, description, tags, categories)
+    /// </summary>
+    public Task<List<Post>> SearchPostsAsync(string searchTerm)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            return Task.FromResult(new List<Post>());
+        }
+
+        lock (_cacheLock)
+        {
+            var normalizedSearch = searchTerm.ToLowerInvariant();
+            
+            var searchResults = _postCache.Values
+                .Where(p => p.Status == PostStatus.Published)
+                .Where(p => 
+                    p.Title.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) ||
+                    p.Content.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) ||
+                    (p.Description != null && p.Description.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase)) ||
+                    (p.Excerpt != null && p.Excerpt.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase)) ||
+                    p.Tags.Any(t => t.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase)) ||
+                    p.Categories.Any(c => c.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase))
+                )
+                .OrderByDescending(p => p.PubDate)
+                .ToList();
+            
+            return Task.FromResult(searchResults);
+        }
+    }
+
+    /// <summary>
+    /// �💾 Saves a post to the file system and updates cache
     /// </summary>
     public async Task<Post> SavePostAsync(Post post)
     {

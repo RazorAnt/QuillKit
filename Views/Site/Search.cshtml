@@ -1,0 +1,129 @@
+@using QuillKit.Services
+@using QuillKit.Extensions
+@inject SiteConfigService SiteConfigService
+@model List<QuillKit.Models.Post>
+
+@{
+    ViewData["Title"] = "Search Results";
+    var query = ViewData["Query"] as string ?? "";
+    var resultCount = ViewData["ResultCount"] as int? ?? 0;
+}
+
+<div class="row">
+    <!-- Main Content Area -->
+    <div class="col-lg-9">
+        
+        <div class="mb-4">
+            <h2 class="search-header">
+                <i class="bi bi-search"></i> Search Results
+            </h2>
+            @if (!string.IsNullOrEmpty(query))
+            {
+                <p class="text-muted">
+                    Found <strong>@resultCount</strong> result@(resultCount != 1 ? "s" : "") for "<strong>@query</strong>"
+                </p>
+            }
+            <hr>
+        </div>
+        
+        @if (resultCount == 0 && !string.IsNullOrEmpty(query))
+        {
+            <div class="alert alert-info">
+                <h5><i class="bi bi-info-circle"></i> No results found</h5>
+                <p class="mb-0">Try searching with different keywords or check your spelling.</p>
+            </div>
+        }
+        else if (string.IsNullOrEmpty(query))
+        {
+            <div class="alert alert-secondary">
+                <h5><i class="bi bi-search"></i> Enter a search term</h5>
+                <p class="mb-0">Use the search box above to find posts and pages.</p>
+            </div>
+        }
+        else
+        {
+            <div class="row">
+                @foreach (var post in Model)
+                {
+                    <div class="col-md-6 mb-4">
+                        <article class="card h-100">
+                            @if (!string.IsNullOrEmpty(post.Image))
+                            {
+                                <div style="height: 200px; overflow: hidden;">
+                                    <img src="@post.Image.ToAbsoluteImageUrl(SiteConfigService)" class="card-img-top" alt="@post.Title" style="height: 100%; width: 100%; object-fit: cover;">
+                                </div>
+                            }
+                            <div class="card-body d-flex flex-column">
+                                @if (post.Type == PostType.Post)
+                                {
+                                    <h4 class="card-title">
+                                        <a href="@Url.Action("Post", "Site", new { slug = post.Slug })">
+                                            @post.Title
+                                        </a>
+                                    </h4>
+                                    
+                                    <div class="post-meta mb-2">
+                                        @if (post.Status == PostStatus.Draft)
+                                        {
+                                            <span class="badge bg-warning text-dark me-2">DRAFT</span>
+                                        }
+                                        <i class="bi bi-calendar3"></i>@post.PubDate.ToString("MMM dd, yyyy")
+                                    </div>
+                                    
+                                    @if (!string.IsNullOrEmpty(post.Excerpt))
+                                    {
+                                        <p class="card-text">@post.Excerpt</p>
+                                    }
+                                    else if (!string.IsNullOrEmpty(post.Description))
+                                    {
+                                        <p class="card-text">@post.Description</p>
+                                    }
+                                    else
+                                    {
+                                        <p class="card-text">Click to read more...</p>
+                                    }
+                                }
+                                else if (post.Type == PostType.Page)
+                                {
+                                    <h5 class="card-title">
+                                        <a href="@Url.Action("Page", "Site", new { slug = post.Slug })">
+                                            @post.Title
+                                        </a>
+                                    </h5>
+                                    <div class="post-meta mb-2">
+                                        <i class="bi bi-file-text"></i> Page
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(post.Description))
+                                    {
+                                        <p class="card-text">@post.Description</p>
+                                    }
+                                }
+                                
+                                <div class="mt-auto">
+                                    @if (post.Categories.Any())
+                                    {
+                                        <span class="badge bg-light text-dark">@post.Categories.First()</span>
+                                    }
+                                    @if (post.Tags.Any())
+                                    {
+                                        @foreach (var tag in post.Tags.Take(3))
+                                        {
+                                            <span class="badge bg-secondary">@tag</span>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-3">
+        <div class="sidebar">
+            @await Html.PartialAsync("_Sidebar")
+        </div>
+    </div>
+</div>

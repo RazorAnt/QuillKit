@@ -214,25 +214,22 @@ public class SiteController : Controller
     /// 🔍 Search results page
     /// </summary>
     [Route("search")]
-    public async Task<IActionResult> Search(string query, int page = 1)
+    public async Task<IActionResult> Search(string q, int page = 1)
     {
-        // TODO: Implement search functionality
-        if (string.IsNullOrEmpty(query))
+        if (string.IsNullOrEmpty(q))
         {
+            ViewData["Query"] = "";
+            ViewData["ResultCount"] = 0;
+            SetSEOViewData("Search", "/search");
             return View(new List<Post>());
         }
 
-        // Placeholder for search implementation
-        var allPosts = await _postService.GetAllPostsAsync();
-        var searchResults = allPosts
-            .Where(p => p.Status == PostStatus.Published)
-            .Where(p => p.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                       p.Content.Contains(query, StringComparison.OrdinalIgnoreCase))
-            .ToList();
+        var searchResults = await _postService.SearchPostsAsync(q);
 
-        ViewData["Query"] = query;
+        ViewData["Query"] = q;
+        ViewData["ResultCount"] = searchResults.Count;
 
-        SetSEOViewData("Search", "/search");
+        SetSEOViewData($"Search: {q}", $"/search?q={Uri.EscapeDataString(q)}");
         return View(searchResults);
     }
 
