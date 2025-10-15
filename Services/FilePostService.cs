@@ -119,10 +119,10 @@ public class FilePostService : IPostService
         {
             var query = _postCache.Values.Where(p => p.Type == PostType.Post);
             
-            // 🔐 Include drafts only if explicitly requested (for admin preview)
+            // 🔐 Include drafts and future posts only if explicitly requested (for admin preview)
             if (!includeDrafts)
             {
-                query = query.Where(p => p.Status == PostStatus.Published);
+                query = query.Where(p => p.Status == PostStatus.Published && p.PubDate <= DateTime.UtcNow);
             }
             
             var posts = query
@@ -144,10 +144,10 @@ public class FilePostService : IPostService
         {
             var query = _postCache.Values.Where(p => p.Type == PostType.Post);
             
-            // 🔐 Include drafts only if explicitly requested (for admin preview)
+            // 🔐 Include drafts and future posts only if explicitly requested (for admin preview)
             if (!includeDrafts)
             {
-                query = query.Where(p => p.Status == PostStatus.Published);
+                query = query.Where(p => p.Status == PostStatus.Published && p.PubDate <= DateTime.UtcNow);
             }
             
             var count = query.Count();
@@ -165,8 +165,8 @@ public class FilePostService : IPostService
         {
             _postCache.TryGetValue(slug, out var post);
             
-            // 🔐 Filter out drafts unless explicitly requested (for admin preview)
-            if (post != null && !includeDrafts && post.Status == PostStatus.Draft)
+            // 🔐 Filter out drafts and future posts unless explicitly requested (for admin preview)
+            if (post != null && !includeDrafts && (post.Status == PostStatus.Draft || post.PubDate > DateTime.UtcNow))
             {
                 return Task.FromResult<Post?>(null);
             }
@@ -193,7 +193,7 @@ public class FilePostService : IPostService
         {
             var categoryPosts = _postCache.Values
                 .Where(p => p.Categories.Any(c => c.Equals(category, StringComparison.OrdinalIgnoreCase)))
-                .Where(p => p.Status == PostStatus.Published)
+                .Where(p => p.Status == PostStatus.Published && p.PubDate <= DateTime.UtcNow)
                 .OrderByDescending(p => p.PubDate)
                 .ToList();
             
@@ -210,7 +210,7 @@ public class FilePostService : IPostService
         {
             var tagPosts = _postCache.Values
                 .Where(p => p.Tags.Any(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase)))
-                .Where(p => p.Status == PostStatus.Published)
+                .Where(p => p.Status == PostStatus.Published && p.PubDate <= DateTime.UtcNow)
                 .OrderByDescending(p => p.PubDate)
                 .ToList();
             
@@ -227,7 +227,7 @@ public class FilePostService : IPostService
         {
             var authorPosts = _postCache.Values
                 .Where(p => p.Author.Equals(author, StringComparison.OrdinalIgnoreCase))
-                .Where(p => p.Status == PostStatus.Published)
+                .Where(p => p.Status == PostStatus.Published && p.PubDate <= DateTime.UtcNow)
                 .OrderByDescending(p => p.PubDate)
                 .ToList();
             
@@ -250,7 +250,7 @@ public class FilePostService : IPostService
             var normalizedSearch = searchTerm.ToLowerInvariant();
             
             var searchResults = _postCache.Values
-                .Where(p => p.Status == PostStatus.Published)
+                .Where(p => p.Status == PostStatus.Published && p.PubDate <= DateTime.UtcNow)
                 .Where(p => 
                     p.Title.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) ||
                     p.Content.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) ||
