@@ -223,7 +223,7 @@ public class AdminController : Controller
         
         if (!string.IsNullOrEmpty(slug))
         {
-            post = await _postService.GetPostBySlugAsync(slug);
+            post = await _postService.GetPostBySlugAsync(slug, true);
             if (post == null)
             {
                 _logger.LogWarning("Post not found for editing: {Slug}", slug);
