@@ -32,7 +32,7 @@ public class Post
     
     public List<string> Tags { get; set; }
     
-    [Url]
+    [UrlOrRelativePath]
     public string? Image { get; set; }
     
     [Url]
