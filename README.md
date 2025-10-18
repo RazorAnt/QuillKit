@@ -25,52 +25,92 @@ A modern, fast, markdown-based site engine built with ASP.NET Core 9.0. QuillKit
 
 ## 🚀 Getting Started
 
-### Prerequisites
-- .NET 9.0 SDK or later
-- A text editor or IDE (VS Code, Visual Studio, etc.)
+**Clone the repository and run:**
 
-### Local Development
+```bash
+git clone https://github.com/RazorAnt/QuillKit.git
+cd QuillKit
+dotnet run
+```
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/RazorAnt/QuillKit.git
-   cd QuillKit
-   ```
-
-2. **Configure admin authentication**
-   
-   Edit `appsettings.Development.json` and set your admin credentials:
-   
-   ```json
-   "AdminAuth": {
-     "Username": "admin",
-     "PasswordHash": "YOUR_PASSWORD_HASH_HERE"
-   }
-   ```
-   
-   **To generate a password hash:**
-   1. Go to [SHA256 Hash Generator](https://codebeautify.org/sha256-hash-generator)
-   2. Enter your desired password (e.g., `mypassword123`)
-   3. Copy the SHA256 hash
-   4. Paste it into `PasswordHash`
-   
-   **Default credentials (for testing):**
-   - Username: `admin`
-   - Password: `admin123`
-   - Hash: `240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9`
-
-3. **Run the application**
-   ```bash
-   dotnet run
-   ```
-   
-   Visit `http://localhost:5000` to see your site and `http://localhost:5000/admin` to access the admin panel.
+Visit `http://localhost:5000` to see your site and `http://localhost:5000/admin` for the admin panel.
 
 ## ⚙️ Configuration
 
-### Site Configuration (`Content/config/site-config.yml`)
+QuillKit uses two main configuration approaches:
 
-Edit this YAML file to customize your site:
+### 1. Application Settings (`appsettings*.json`)
+
+These files control how QuillKit runs:
+
+**Development** (`appsettings.Development.json`):
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ContentProvider": "Local",
+  "ConnectionStrings": {
+    "AzureStorage": ""
+  },
+  "SiteConfig": {
+    "BaseUrl": "http://localhost:5000"
+  },
+  "AdminAuth": {
+    "Username": "admin",
+    "PasswordHash": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9"
+  }
+}
+```
+
+**Production** (`appsettings.Production.json` - optional, use Azure App Settings instead):
+```json
+{
+  "ContentProvider": "AzureBlob",
+  "ConnectionStrings": {
+    "AzureStorage": "DefaultEndpointsProtocol=https;AccountName=...;AccountKey=..."
+  },
+  "SiteConfig": {
+    "BaseUrl": "https://quillkit.mydomain.com"
+  },
+  "AdminAuth": {
+    "Username": "admin",
+    "PasswordHash": "your-sha256-hash-here"
+  }
+}
+```
+
+**⚠️ Important**: For production, use Azure App Settings to inject these values instead of committing them to GitHub. See the [Azure Deployment](#-azure-deployment) section below.
+
+#### Application Settings Reference
+
+| Setting | Description | Example |
+|---------|-------------|---------|
+| `ContentProvider` | Where to store content: `Local` or `AzureBlob` | `"Local"` or `"AzureBlob"` |
+| `ConnectionStrings:AzureStorage` | Azure Storage connection string (required if using AzureBlob) | `"DefaultEndpointsProtocol=https;..."` |
+| `SiteConfig:BaseUrl` | Your site's public web address | `"https://myblog.com"` or `"http://localhost:5000"` |
+| `AdminAuth:Username` | Admin username | `"admin"` |
+| `AdminAuth:PasswordHash` | SHA256 hash of admin password | See below |
+
+#### Setting Your Admin Password
+
+1. Go to [SHA256 Hash Generator](https://codebeautify.org/sha256-hash-generator)
+2. Enter your desired password
+3. Copy the SHA256 hash
+4. Paste into `AdminAuth:PasswordHash`
+
+**Default credentials (for testing):**
+- Username: `admin`
+- Password: `admin123`
+- Hash: `240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9`
+
+### 2. Site Configuration (`Content/config/site-config.yml`)
+
+This YAML file defines your site's appearance and content:
 
 ```yaml
 site:
@@ -81,11 +121,23 @@ site:
 author:
   name: "Your Name"
   bio: "Your bio"
+  email: "your@email.com"
   
 social:
   github: "your-username"
   twitter: "your-handle"
+  linkedin: "your-handle"
+
+navigation:
+  - title: "Home"
+    url: "/"
+  - title: "About"
+    url: "/about"
+  - title: "Archive"
+    url: "/archive"
 ```
+
+Edit this file through the admin panel or directly in your text editor to customize your site's branding, navigation, and metadata.
 
 ### Admin Area
 
@@ -95,7 +147,7 @@ Access the admin dashboard at `/admin` with your configured credentials:
 - **Backup Data**: Download a zip file with all your data
 - **Editor**: Create and edit posts and pages
 - **Media**: Manage images and media files
-- **Settings**: Configure site-wide settings
+- **Settings**: Edit site configuration
 
 ## 📝 Writing Content
 
