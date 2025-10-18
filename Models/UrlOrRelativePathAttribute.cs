@@ -15,16 +15,16 @@ public class UrlOrRelativePathAttribute : ValidationAttribute
 
         var urlString = value.ToString()!;
 
+        // Check if it's a valid relative path FIRST (before Uri.TryCreate which treats /paths as file:// URIs)
+        if (urlString.StartsWith("/") || urlString.StartsWith("./") || urlString.StartsWith("../"))
+            return true;
+
         // Check if it's a valid fully-qualified URL
         if (Uri.TryCreate(urlString, UriKind.Absolute, out var absoluteUri))
         {
             var scheme = absoluteUri.Scheme;
             return scheme == Uri.UriSchemeHttp || scheme == Uri.UriSchemeHttps || scheme == Uri.UriSchemeFtp;
         }
-
-        // Check if it's a valid relative path (starts with / or ./)
-        if (urlString.StartsWith("/") || urlString.StartsWith("./") || urlString.StartsWith("../"))
-            return true;
 
         return false;
     }
