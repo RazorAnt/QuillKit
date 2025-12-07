@@ -28,6 +28,20 @@ html.dark-mode .navbar-nav .nav-link.active {
     color: #EC9C24 !important;
 }
 
+/* Navbar Toggler (Mobile Menu Button) */
+html.dark-mode .navbar-toggler {
+    border-color: #3a3a3a;
+}
+
+html.dark-mode .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23b0b0b0' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+html.dark-mode .navbar-toggler:hover .navbar-toggler-icon,
+html.dark-mode .navbar-toggler:focus .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23EC9C24' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
 /* Theme Toggle Button */
 html.dark-mode #theme-toggle {
     color: #b0b0b0;
@@ -61,6 +75,31 @@ html.dark-mode .form-control::placeholder {
 html.dark-mode .form-floating > .form-control-plaintext::placeholder,
 html.dark-mode .form-floating > .form-control::placeholder {
     color: #707070;
+}
+
+/* Checkboxes and Radio Buttons */
+html.dark-mode .form-check-input {
+    background-color: #2a2a2a;
+    border-color: #3a3a3a;
+}
+
+html.dark-mode .form-check-input:checked {
+    background-color: #EC9C24;
+    border-color: #EC9C24;
+}
+
+html.dark-mode .form-check-input:focus {
+    border-color: #EC9C24;
+    box-shadow: 0 0 0 0.25rem rgba(236, 156, 36, 0.25);
+}
+
+html.dark-mode .form-check-input:hover {
+    border-color: #505050;
+}
+
+/* Form Labels */
+html.dark-mode .form-check-label {
+    color: #e0e0e0;
 }
 
 /* Buttons */
