@@ -227,7 +227,7 @@ public class AdminController : Controller
             if (post == null)
             {
                 _logger.LogWarning("Post not found for editing: {Slug}", slug);
-                return NotFound();
+                return View("NotFound");
             }
         }
         

@@ -56,7 +56,7 @@ public class SiteController : Controller
     {
         if (string.IsNullOrEmpty(slug))
         {
-            return NotFound();
+            return RedirectToAction("NotFound");
         }
 
         // 🔐 Check if user is authenticated to show drafts
@@ -66,21 +66,21 @@ public class SiteController : Controller
         if (post == null)
         {
             _logger.LogWarning("Post not found: {Slug}", slug);
-            return NotFound();
+            return RedirectToAction("NotFound");
         }
 
         // Allow viewing drafts only if admin, otherwise must be published
         if (!isAdmin && (post.Status != PostStatus.Published || post.Type != PostType.Post))
         {
             _logger.LogWarning("Attempted to access unpublished post: {Slug}", slug);
-            return NotFound();
+            return RedirectToAction("NotFound");
         }
         
         // Ensure it's actually a post type
         if (post.Type != PostType.Post)
         {
             _logger.LogWarning("Attempted to access non-post content as post: {Slug}", slug);
-            return NotFound();
+            return RedirectToAction("NotFound");
         }
 
         SetSEOViewData(post);
@@ -96,7 +96,7 @@ public class SiteController : Controller
     {
         if (string.IsNullOrEmpty(slug))
         {
-            return NotFound();
+            return RedirectToAction("NotFound");
         }
 
         var page = await _postService.GetPostBySlugAsync(slug);
@@ -104,13 +104,13 @@ public class SiteController : Controller
         if (page == null)
         {
             _logger.LogWarning("Page not found: {Slug}", slug);
-            return NotFound();
+            return RedirectToAction("NotFound");
         }
 
         if (page.Status != PostStatus.Published || page.Type != PostType.Page)
         {
             _logger.LogWarning("Attempted to access unpublished page: {Slug}", slug);
-            return NotFound();
+            return RedirectToAction("NotFound");
         }
 
         SetSEOViewData(page);
@@ -126,7 +126,7 @@ public class SiteController : Controller
     {
         if (string.IsNullOrEmpty(category))
         {
-            return NotFound();
+            return RedirectToAction("NotFound");
         }
 
         var pageSize = _siteConfigService.Config.PostsPerPage;
@@ -167,7 +167,7 @@ public class SiteController : Controller
     {
         if (string.IsNullOrEmpty(tag))
         {
-            return NotFound();
+            return RedirectToAction("NotFound");
         }
 
         var pageSize = _siteConfigService.Config.PostsPerPage;
@@ -302,6 +302,16 @@ public class SiteController : Controller
     public IActionResult Error()
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+    }
+
+    /// <summary>
+    /// 📄 404 Not Found page
+    /// </summary>
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult NotFound()
+    {
+        Response.StatusCode = 404;
+        return View();
     }
 
     private void SetSEOViewData(string title, string slug)
